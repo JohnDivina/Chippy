@@ -8,6 +8,17 @@ public enum DistrictID: String, Sendable, Equatable, Hashable, CaseIterable, Cod
     case engineCore = "engine_core"
     case scriptorium = "scriptorium"
     case wanderersMarket = "wanderers_market"
+
+    public var displayName: String {
+        switch self {
+        case .highCouncil: return "The High Council"
+        case .ironBastion: return "The Iron Bastion"
+        case .grandAtelier: return "The Grand Atelier"
+        case .engineCore: return "The Engine Core"
+        case .scriptorium: return "The Scriptorium"
+        case .wanderersMarket: return "Wanderer's Market"
+        }
+    }
 }
 
 /// Represents an island district where specialized workshops cluster.

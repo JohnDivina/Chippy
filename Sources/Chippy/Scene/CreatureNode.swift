@@ -63,9 +63,9 @@ public final class CreatureNode: SKNode {
     public func walk(to targetPosition: CGPoint, newGrid: GridPoint, duration: TimeInterval = 0.8, completion: (@MainActor @Sendable () -> Void)? = nil) {
         bodyContainer.removeAction(forKey: "idle")
 
-        // Face travel direction
+        // Face travel direction: flip spriteNode only so bubbles are never mirrored
         let movingLeft = targetPosition.x < position.x
-        bodyContainer.xScale = movingLeft ? -1.0 : 1.0
+        spriteNode.xScale = movingLeft ? -1.0 : 1.0
 
         // 2-frame walking step animation
         let f0 = PixelArtAtlas.shared.familiarSprite(kind: familiarKind, frame: 0)
@@ -162,7 +162,7 @@ public final class CreatureNode: SKNode {
         let roleLabel = SKLabelNode(text: roleTag)
         roleLabel.fontName = NSFont.monospacedSystemFont(ofSize: 6.5, weight: .bold).fontName
         roleLabel.fontSize = 6.5
-        roleLabel.fontColor = isWorking ? NSColor(red: 0.98, green: 0.82, blue: 0.42, alpha: 1.0) : NSColor(white: 0.70, alpha: 1.0)
+        roleLabel.fontColor = isWorking ? NSColor(red: 0.85, green: 0.80, blue: 0.66, alpha: 1.0) /* #D9CBA8 muted parchment */ : NSColor(white: 0.70, alpha: 1.0)
         roleLabel.verticalAlignmentMode = .center
         roleLabel.horizontalAlignmentMode = .center
         roleLabel.position = CGPoint(x: 0, y: 5)
@@ -182,7 +182,7 @@ public final class CreatureNode: SKNode {
         bubble.zPosition = 25
         bubble.setScale(0.1)
 
-        bodyContainer.addChild(bubble)
+        addChild(bubble)
         self.thoughtBubbleNode = bubble
 
         // Pop in with gentle bounce, hover during task, and fade out

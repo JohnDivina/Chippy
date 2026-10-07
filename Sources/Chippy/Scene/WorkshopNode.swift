@@ -40,7 +40,6 @@ public final class WorkshopNode: SKNode {
         addChild(structureContainer)
         buildStructure()
         buildSignboard()
-        buildWindowGlow()
     }
 
     required init?(coder aDecoder: NSCoder) {
@@ -137,16 +136,6 @@ public final class WorkshopNode: SKNode {
         self.signBoardNode = board
     }
 
-    private func buildWindowGlow() {
-        let glow = SKShapeNode(circleOfRadius: 22)
-        glow.fillColor = NSColor(red: 0.98, green: 0.82, blue: 0.35, alpha: 0.0)
-        glow.strokeColor = .clear
-        glow.position = CGPoint(x: 0, y: 24)
-        glow.zPosition = 3
-        structureContainer.addChild(glow)
-        self.windowGlowNode = glow
-    }
-
     // MARK: - Active World Working State
 
     /// Activates or settles the workshop's working graphical state when an AI prompt is active.
@@ -154,11 +143,8 @@ public final class WorkshopNode: SKNode {
         self.isWorking = working
 
         if working {
-            // 1. Light up signboard indicator with golden pulse
-            signStatusDot?.fillColor = NSColor(red: 0.98, green: 0.76, blue: 0.22, alpha: 1.0)
-            let pulseIn = SKAction.fadeAlpha(to: 0.4, duration: 0.5)
-            let pulseOut = SKAction.fadeAlpha(to: 1.0, duration: 0.5)
-            signStatusDot?.run(SKAction.repeatForever(SKAction.sequence([pulseIn, pulseOut])), withKey: "dotPulse")
+            // 1. Solid active indicator (discrete solid dot, no glowing halo)
+            signStatusDot?.fillColor = NSColor(white: 0.92, alpha: 1.0)
 
             if let task = taskDescription, !task.isEmpty {
                 let maxLen = 14
@@ -168,30 +154,18 @@ public final class WorkshopNode: SKNode {
                 signLabel?.text = "\(title) (Active)"
             }
 
-            // 2. Window cozy fireplace/lantern illumination
-            let glowAnim = SKAction.sequence([
-                SKAction.fadeAlpha(to: 0.45, duration: 0.4),
-                SKAction.fadeAlpha(to: 0.25, duration: 0.4)
-            ])
-            windowGlowNode?.run(SKAction.repeatForever(glowAnim), withKey: "windowGlow")
-
-            // 3. Start Chimney Smoke puffs
+            // 2. Start Chimney Smoke puffs (physical motion instead of glow)
             startChimneySmoke()
 
-            // 4. Little cheerful bounce on start
-            let bounceUp = SKAction.scale(to: 1.05, duration: 0.12)
+            // 3. Subtle bounce on start
+            let bounceUp = SKAction.scale(to: 1.04, duration: 0.12)
             let bounceDown = SKAction.scale(to: 1.0, duration: 0.16)
             structureContainer.run(SKAction.sequence([bounceUp, bounceDown]))
 
         } else {
             // Settle down to peaceful village state
-            signStatusDot?.removeAction(forKey: "dotPulse")
-            signStatusDot?.alpha = 1.0
             signStatusDot?.fillColor = NSColor(white: 0.5, alpha: 0.4)
             signLabel?.text = title
-
-            windowGlowNode?.removeAction(forKey: "windowGlow")
-            windowGlowNode?.run(SKAction.fadeAlpha(to: 0.0, duration: 0.5))
 
             removeAction(forKey: smokeEmitterTaskKey)
         }
@@ -228,25 +202,13 @@ public final class WorkshopNode: SKNode {
         run(loop, withKey: smokeEmitterTaskKey)
     }
 
-    /// Triggers an activation glow/bounce when a skill inside this workshop is used.
+    /// Triggers an activation bounce when a skill inside this workshop is used.
     public func activateWorkshop() {
-        let pulseUp = SKAction.scale(to: 1.08, duration: 0.12)
-        let pulseDown = SKAction.scale(to: 1.0, duration: 0.22)
+        let pulseUp = SKAction.scale(to: 1.06, duration: 0.12)
+        let pulseDown = SKAction.scale(to: 1.0, duration: 0.20)
         pulseUp.timingMode = .easeInEaseOut
         pulseDown.timingMode = .easeInEaseOut
         structureContainer.run(SKAction.sequence([pulseUp, pulseDown]))
-
-        // Warm beacon aura on activation
-        let glow = SKShapeNode(circleOfRadius: 28)
-        glow.fillColor = NSColor(red: 0.98, green: 0.82, blue: 0.35, alpha: 0.35)
-        glow.strokeColor = .clear
-        glow.position = CGPoint(x: 0, y: 26)
-        glow.zPosition = 5
-        addChild(glow)
-        glow.run(SKAction.sequence([
-            SKAction.scale(to: 1.4, duration: 0.3),
-            SKAction.fadeOut(withDuration: 0.2),
-            SKAction.removeFromParent()
-        ]))
     }
 }
+

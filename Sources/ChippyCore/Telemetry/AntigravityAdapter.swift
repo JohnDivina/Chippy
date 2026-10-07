@@ -87,10 +87,21 @@ public final class AntigravityAdapter: TranscriptAdapter, Sendable {
         var events: [AgentEvent] = []
         let agentID = "antigravity.lead"
 
-        // 1. Check for error status
+        // 1. Check for error status and detect quota / rate-limit failures
         if let status = step.status, status.uppercased() == "ERROR" {
             let errorMsg = step.content ?? "Step execution failed with ERROR status"
-            events.append(.error(agentID: agentID, message: errorMsg))
+            let lower = errorMsg.lowercased()
+            let reason: ErrorReason
+            if lower.contains("quota") || lower.contains("resource exhausted") {
+                reason = .quotaExceeded
+            } else if lower.contains("rate limit") || lower.contains("429") {
+                reason = .rateLimited
+            } else if lower.contains("permission denied") || lower.contains("unauthorized") {
+                reason = .permissionDenied
+            } else {
+                reason = .generic
+            }
+            events.append(.error(agentID: agentID, message: errorMsg, reason: reason))
             return events
         }
 
@@ -122,10 +133,18 @@ public final class AntigravityAdapter: TranscriptAdapter, Sendable {
             }
         }
 
-        // 5. Parse Agent Response Text
+        // 5. Parse Tool Results
+        if step.type == "RUN_COMMAND" {
+            events.append(.commandFinished(agentID: agentID, exitCode: 0))
+        }
+
+        // 6. Parse Agent Response Text & Subagent completion
         if step.type == "PLANNER_RESPONSE" || step.type == "SUBAGENT_RESPONSE" {
             if let content = step.content, !content.isEmpty {
                 events.append(.agentMessage(agentID: agentID, text: content))
+            }
+            if step.type == "SUBAGENT_RESPONSE" {
+                events.append(.subagentFinished(childID: agentID))
             }
         }
 

@@ -34,7 +34,7 @@ public struct ModelSelectorView: View {
             HStack {
                 Text("👑")
                     .font(.system(size: 14))
-                Text("Sovereign Model Selection")
+                Text("Observed Model")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundColor(ChippyTheme.textPrimary)
 
@@ -42,7 +42,8 @@ public struct ModelSelectorView: View {
 
                 HStack(spacing: 5) {
                     Circle()
-                        .fill(isConnectedToLiveAntigravity ? Color.green : ChippyTheme.statusDot)
+                        .fill(ChippyTheme.statusDot)
+                        .opacity(isConnectedToLiveAntigravity ? 1.0 : 0.45)
                         .frame(width: 6, height: 6)
                     Text(isConnectedToLiveAntigravity ? "Antigravity Live" : "Replay Stream")
                         .font(.system(size: 10, design: .monospaced))

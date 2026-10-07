@@ -2,50 +2,48 @@ import SwiftUI
 import SpriteKit
 import ChippyCore
 
-/// Root view assembling the 2.5D SpriteKit diorama canvas and SwiftUI HUD overlay.
+/// Root view assembling the 2.5D SpriteKit diorama canvas, RenderGovernor, and ChippyHUDView.
 public struct ContentView: View {
+    @Bindable public var appState: AppState
+
     @State private var scene: ParadiseScene
     @State private var director: SceneDirector
+    @State private var governor: RenderGovernor
     @State private var replayEngine: ReplayEngine?
     @State private var telemetryWatcher: TelemetryWatcher?
+    @State private var sessionMonitor: SessionMonitor
+    @State private var watchingTask: Task<Void, Never>?
+    @State private var sessionMonitorTask: Task<Void, Never>?
 
-    @State private var activeModelName: String = "Observing Model..."
-    @State private var isPlaying: Bool = false
-    @State private var currentSpeed: PlaybackSpeed = .normal
-    @State private var currentProgress: Int = 0
-    @State private var totalEvents: Int = 0
-    @State private var loadedSkills: [SkillWorkshop] = []
-    @State private var eventLog: [AgentEvent] = []
-    @State private var isLiveAntigravityMode: Bool = true
-    @State private var latestResponse: String? = nil
-
-    public init() {
+    public init(appState: AppState = AppState()) {
+        self.appState = appState
         let newScene = ParadiseScene(size: CGSize(width: 1024, height: 768))
         let newDirector = SceneDirector(scene: newScene)
+        let newGovernor = RenderGovernor()
+        let newMonitor = SessionMonitor()
+
         _scene = State(initialValue: newScene)
         _director = State(initialValue: newDirector)
+        _governor = State(initialValue: newGovernor)
+        _sessionMonitor = State(initialValue: newMonitor)
     }
 
     public var body: some View {
         ZStack {
-            // 2.5D SpriteKit Diorama View with native Metal batching
+            // 2.5D SpriteKit Diorama View controlled by RenderGovernor
             GeometryReader { geo in
-                SpriteView(
-                    scene: scene,
-                    preferredFramesPerSecond: 60,
-                    options: [.shouldCullNonVisibleNodes, .ignoresSiblingOrder]
-                )
-                .frame(width: geo.size.width, height: geo.size.height)
-                .onAppear {
-                    if geo.size.width > 0 && geo.size.height > 0 && scene.size != geo.size {
-                        scene.size = geo.size
+                ParadiseSKView(scene: scene, governor: governor)
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .onAppear {
+                        if geo.size.width > 0 && geo.size.height > 0 && scene.size != geo.size {
+                            scene.size = geo.size
+                        }
                     }
-                }
-                .onChange(of: geo.size) { _, newSize in
-                    if newSize.width > 0 && newSize.height > 0 && scene.size != newSize {
-                        scene.size = newSize
+                    .onChange(of: geo.size) { _, newSize in
+                        if newSize.width > 0 && newSize.height > 0 && scene.size != newSize {
+                            scene.size = newSize
+                        }
                     }
-                }
             }
             .ignoresSafeArea()
 
@@ -57,15 +55,7 @@ public struct ContentView: View {
 
             // Anti-slop SwiftUI HUD
             ChippyHUDView(
-                activeModelName: $activeModelName,
-                isPlaying: $isPlaying,
-                currentSpeed: $currentSpeed,
-                currentProgress: $currentProgress,
-                isLiveAntigravityMode: $isLiveAntigravityMode,
-                latestResponse: $latestResponse,
-                totalEvents: totalEvents,
-                skills: loadedSkills,
-                events: eventLog,
+                appState: appState,
                 onPlayPause: togglePlayPause,
                 onStepForward: stepForward,
                 onStepBackward: stepBackward,
@@ -76,57 +66,123 @@ public struct ContentView: View {
                 onSelectSkill: handleSelectSkill,
                 onSelectModel: handleSelectModel,
                 onSubmitPrompt: handlePromptSubmit,
-                onToggleLiveMode: toggleLiveMode
+                onToggleLiveMode: toggleLiveMode,
+                onSelectSession: handleSelectSession,
+                onRescanSkills: rescanSkills
             )
         }
         .frame(minWidth: 960, minHeight: 640)
         .task {
+            NotificationService.shared.requestAuthorizationIfNeeded()
             await initializeChippy()
+        }
+        .onChange(of: appState.isPinnedOnTop) { _, isPinned in
+            updateWindowPinLevel(isPinned: isPinned)
         }
     }
 
-    // MARK: - Lifecycle & Actions
+    // MARK: - Initialization & Session Monitoring
 
     @MainActor
     private func initializeChippy() async {
-        // 1. Ingest all 48 production skills directly from workspace
-        let productionSkillsURL = URL(fileURLWithPath: "/Users/johnrey/Desktop/Programming/production-agents/.agents/skills")
-        let discovery = SkillDiscovery()
-        let discovered = discovery.discoverSkills(
-            userCustomFolders: [productionSkillsURL],
-            workspaceURL: URL(fileURLWithPath: "/Users/johnrey/Desktop/Programming")
-        )
-        self.loadedSkills = discovered
+        // 1. Discover skills without personal hardcoded paths
+        rescanSkills()
 
-        // 2. Setup Live Antigravity Telemetry Watcher
+        // 2. Initialize Telemetry Watcher
         let watcher = TelemetryWatcher()
         self.telemetryWatcher = watcher
 
-        if isLiveAntigravityMode {
-            startLiveWatching(watcher: watcher)
+        if appState.isLiveAntigravityMode {
+            startSessionMonitoringAndLiveWatch(watcher: watcher)
         } else {
             setupReplayFixture()
         }
     }
 
-    private func startLiveWatching(watcher: TelemetryWatcher) {
-        if let latestURL = SessionLocator().findLatestTranscriptURL() {
-            Task {
-                let stream = await watcher.startWatching(fileURL: latestURL, readFromBeginning: true, maxInitialLines: 25)
-                for await event in stream {
-                    await MainActor.run {
-                        director.handleEvent(event)
-                        eventLog.append(event)
-                        activeModelName = director.activeModelName
-                        if case .agentMessage(_, let text) = event {
-                            self.latestResponse = text
+    @MainActor
+    private func rescanSkills() {
+        let fileManager = FileManager.default
+        let currentDir = URL(fileURLWithPath: fileManager.currentDirectoryPath)
+
+        // Read configured brain/custom paths from UserDefaults
+        var customFolders: [URL] = []
+        if let customPath = UserDefaults.standard.string(forKey: "customSkillsDirectoryPath"), !customPath.isEmpty {
+            customFolders.append(URL(fileURLWithPath: customPath))
+        }
+
+        let discovery = SkillDiscovery()
+        let discovered = discovery.discoverSkills(
+            userCustomFolders: customFolders,
+            workspaceURL: currentDir
+        )
+        appState.loadedSkills = discovered
+        director.setKnownSkills(discovered)
+    }
+
+    @MainActor
+    private func startSessionMonitoringAndLiveWatch(watcher: TelemetryWatcher) {
+        sessionMonitorTask?.cancel()
+
+        sessionMonitorTask = Task {
+            let stream = await sessionMonitor.startMonitoring(pollIntervalSeconds: 2.0)
+            for await sessions in stream {
+                await MainActor.run {
+                    appState.availableSessions = sessions
+                    // Auto-follow: if current active session changed or initial load
+                    if let newest = sessions.first {
+                        if appState.activeSessionID == nil || (UserDefaults.standard.bool(forKey: "autoFollowSessions") && appState.activeSessionID != newest.id && newest.isActive) {
+                            switchLiveWatchTo(session: newest, watcher: watcher)
                         }
                     }
                 }
             }
+        }
+    }
+
+    @MainActor
+    private func switchLiveWatchTo(session: SessionInfo, watcher: TelemetryWatcher) {
+        watchingTask?.cancel()
+        appState.activeSessionID = session.id
+        appState.clearEvents()
+
+        watchingTask = Task {
+            let stream = await watcher.startWatching(fileURL: session.transcriptURL, readFromBeginning: true, maxInitialLines: 30)
+            for await event in stream {
+                await MainActor.run {
+                    governor.notifyEventActivity()
+                    director.handleEvent(event)
+                    appState.appendEvent(event)
+                    appState.activeModelName = director.activeModelName
+
+                    if case .agentMessage(_, let text) = event {
+                        appState.latestResponse = text
+                    }
+
+                    NotificationService.shared.handleEvent(event, isAppActive: NSApp.isActive)
+                }
+            }
+        }
+    }
+
+    private func handleSelectSession(_ session: SessionInfo) {
+        if appState.isLiveAntigravityMode, let watcher = telemetryWatcher {
+            switchLiveWatchTo(session: session, watcher: watcher)
         } else {
-            // Fallback to bundled fixture if no local Antigravity session found
-            setupReplayFixture()
+            // Replay selected session
+            loadSessionForReplay(session: session)
+        }
+    }
+
+    private func loadSessionForReplay(session: SessionInfo) {
+        let adapter = AntigravityAdapter()
+        if let engine = try? ReplayEngine(transcriptURL: session.transcriptURL, adapter: adapter) {
+            self.replayEngine = engine
+            appState.activeSessionID = session.id
+            appState.clearEvents()
+            Task {
+                let count = await engine.totalEvents
+                await MainActor.run { appState.totalEvents = count }
+            }
         }
     }
 
@@ -137,20 +193,22 @@ public struct ContentView: View {
             self.replayEngine = engine
             Task {
                 let count = await engine.totalEvents
-                await MainActor.run { self.totalEvents = count }
+                await MainActor.run { appState.totalEvents = count }
             }
         }
     }
 
     private func toggleLiveMode() {
-        isLiveAntigravityMode.toggle()
-        eventLog.removeAll()
+        appState.isLiveAntigravityMode.toggle()
+        appState.clearEvents()
 
-        if isLiveAntigravityMode {
+        if appState.isLiveAntigravityMode {
             if let watcher = telemetryWatcher {
-                startLiveWatching(watcher: watcher)
+                startSessionMonitoringAndLiveWatch(watcher: watcher)
             }
         } else {
+            sessionMonitorTask?.cancel()
+            watchingTask?.cancel()
             Task {
                 await telemetryWatcher?.stopWatching()
             }
@@ -160,26 +218,25 @@ public struct ContentView: View {
 
     private func handlePromptSubmit(_ prompt: String) {
         let userEvent = AgentEvent.userPrompt(text: prompt)
-        eventLog.append(userEvent)
+        appState.appendEvent(userEvent)
         director.handleEvent(userEvent)
+        governor.notifyEventActivity()
 
-        if isLiveAntigravityMode {
-            // 1. Forward prompt seamlessly to active Antigravity session in background
+        if appState.isLiveAntigravityMode {
+            // Forward prompt seamlessly to active Antigravity session in background
             AntigravityBridge.forwardPromptToAntigravity(prompt)
 
-            // 2. Sovereign immediately begins reasoning & planning
             let thinkEvent = AgentEvent.thinking(agentID: "sovereign")
-            eventLog.append(thinkEvent)
+            appState.appendEvent(thinkEvent)
             director.handleEvent(thinkEvent)
-            // Real-time kernel telemetry will now stream all tool executions and the full final response!
         } else {
             // Replay/offline simulation for testing
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                 let replyText = "Replay Mode: Quest '\(prompt)' acknowledged by the Sovereign Council."
                 let msgEvent = AgentEvent.agentMessage(agentID: "sovereign", text: replyText)
-                eventLog.append(msgEvent)
+                appState.appendEvent(msgEvent)
                 director.handleEvent(msgEvent)
-                self.latestResponse = replyText
+                appState.latestResponse = replyText
             }
         }
     }
@@ -187,15 +244,23 @@ public struct ContentView: View {
     private func handleSelectSkill(_ skill: SkillWorkshop) {
         scene.focusLandmark(key: skill.districtID.rawValue)
         let event = AgentEvent.skillLoaded(agentID: "scribe", skillName: skill.name)
-        eventLog.append(event)
+        appState.appendEvent(event)
         director.handleEvent(event)
     }
 
     private func handleSelectModel(_ model: String) {
-        self.activeModelName = model
+        appState.activeModelName = model
         let event = AgentEvent.sessionStarted(sessionID: UUID().uuidString, model: model, startedAt: Date())
-        eventLog.append(event)
+        appState.appendEvent(event)
         director.handleEvent(event)
+    }
+
+    private func updateWindowPinLevel(isPinned: Bool) {
+        DispatchQueue.main.async {
+            if let window = NSApp.windows.first {
+                window.level = isPinned ? .floating : .normal
+            }
+        }
     }
 
     // MARK: - Replay Controls
@@ -206,10 +271,10 @@ public struct ContentView: View {
             let playing = await engine.currentlyPlaying
             if playing {
                 await engine.pause()
-                await MainActor.run { isPlaying = false }
+                await MainActor.run { appState.isPlaying = false }
             } else {
                 await engine.play()
-                await MainActor.run { isPlaying = true }
+                await MainActor.run { appState.isPlaying = true }
                 listenToStream(engine: engine)
             }
         }
@@ -221,15 +286,15 @@ public struct ContentView: View {
             for await event in stream {
                 await MainActor.run {
                     director.handleEvent(event)
-                    eventLog.append(event)
-                    activeModelName = director.activeModelName
+                    appState.appendEvent(event)
+                    appState.activeModelName = director.activeModelName
                 }
                 let progress = await engine.currentProgress
                 await MainActor.run {
-                    currentProgress = progress
+                    appState.currentProgress = progress
                 }
             }
-            await MainActor.run { isPlaying = false }
+            await MainActor.run { appState.isPlaying = false }
         }
     }
 
@@ -239,11 +304,11 @@ public struct ContentView: View {
             if let event = await engine.stepForward() {
                 await MainActor.run {
                     director.handleEvent(event)
-                    eventLog.append(event)
-                    activeModelName = director.activeModelName
+                    appState.appendEvent(event)
+                    appState.activeModelName = director.activeModelName
                 }
                 let progress = await engine.currentProgress
-                await MainActor.run { currentProgress = progress }
+                await MainActor.run { appState.currentProgress = progress }
             }
         }
     }
@@ -256,13 +321,13 @@ public struct ContentView: View {
                     director.handleEvent(event)
                 }
                 let progress = await engine.currentProgress
-                await MainActor.run { currentProgress = progress }
+                await MainActor.run { appState.currentProgress = progress }
             }
         }
     }
 
     private func changeSpeed(_ speed: PlaybackSpeed) {
-        currentSpeed = speed
+        appState.currentSpeed = speed
         guard let engine = replayEngine else { return }
         Task {
             await engine.setSpeed(speed)

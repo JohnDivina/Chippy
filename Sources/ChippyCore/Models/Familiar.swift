@@ -33,6 +33,29 @@ public enum FamiliarKind: String, Sendable, Equatable, Hashable, CaseIterable, C
         case .arbiter: return "Inspector performing code review checklists and verifying changes."
         }
     }
+
+    public var district: DistrictID {
+        switch self {
+        case .sovereign: return .highCouncil
+        case .scout: return .wanderersMarket
+        case .scribe: return .scriptorium
+        case .mason: return .engineCore
+        case .weaver: return .grandAtelier
+        case .sentinel: return .ironBastion
+        case .arbiter: return .wanderersMarket
+        }
+    }
+
+    public static func from(agentID: String) -> FamiliarKind {
+        let lower = agentID.lowercased()
+        if lower.contains("scout") { return .scout }
+        if lower.contains("scribe") { return .scribe }
+        if lower.contains("mason") { return .mason }
+        if lower.contains("weaver") { return .weaver }
+        if lower.contains("sentinel") { return .sentinel }
+        if lower.contains("arbiter") { return .arbiter }
+        return .sovereign
+    }
 }
 
 /// The current activity state of a familiar in the diorama.

@@ -29,7 +29,8 @@ public struct PromptChatboxView: View {
             Button(action: onToggleLiveMode) {
                 HStack(spacing: 5) {
                     Circle()
-                        .fill(isLiveMode ? Color.green : ChippyTheme.statusDot)
+                        .fill(ChippyTheme.statusDot)
+                        .opacity(isLiveMode ? 1.0 : 0.45)
                         .frame(width: 5, height: 5)
                     Text(isLiveMode ? "Antigravity Live" : "Replay Mode")
                         .font(.system(size: 10, weight: .semibold, design: .monospaced))

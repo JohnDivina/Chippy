@@ -13,6 +13,8 @@ public actor TelemetryWatcher {
     private let adapter: any TranscriptAdapter
     private let redactor: Redactor
 
+    private var lineAssembler = LineAssembler()
+
     public init(adapter: any TranscriptAdapter = AntigravityAdapter(), redactor: Redactor = Redactor()) {
         self.adapter = adapter
         self.redactor = redactor
@@ -32,6 +34,7 @@ public actor TelemetryWatcher {
         }
 
         self.isWatching = true
+        self.lineAssembler.reset()
 
         let stream = AsyncStream<AgentEvent> { cont in
             self.continuation = cont
@@ -82,6 +85,7 @@ public actor TelemetryWatcher {
         dispatchSource?.cancel()
         dispatchSource = nil
         fileDescriptor = -1
+        lineAssembler.reset()
         continuation?.finish()
         continuation = nil
     }
@@ -125,6 +129,7 @@ public actor TelemetryWatcher {
         // Reset if file was truncated
         if currentSize < fileOffset {
             fileOffset = 0
+            lineAssembler.reset()
         }
 
         // Fast exit: if no new bytes were appended, skip opening FileHandle
@@ -138,10 +143,10 @@ public actor TelemetryWatcher {
         let newData = fileHandle.readDataToEndOfFile()
         self.fileOffset = currentSize
 
-        guard !newData.isEmpty, let text = String(data: newData, encoding: .utf8) else { return }
+        guard !newData.isEmpty else { return }
 
-        let lines = text.components(separatedBy: "\n")
-        for line in lines where !line.trimmingCharacters(in: .whitespaces).isEmpty {
+        let completeLines = lineAssembler.ingest(newData)
+        for line in completeLines {
             if let lineData = line.data(using: .utf8),
                let events = try? adapter.events(fromLine: lineData) {
                 for event in events {

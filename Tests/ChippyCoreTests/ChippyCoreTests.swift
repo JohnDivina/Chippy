@@ -228,6 +228,14 @@ final class RedactorTests: XCTestCase {
         XCTAssertTrue(redacted.contains("[REDACTED_GOOGLE_KEY]"))
         XCTAssertTrue(redacted.contains("[REDACTED_GITHUB_TOKEN]"))
         XCTAssertTrue(redacted.contains("[REDACTED_SLACK_TOKEN]"))
+
+        // Anthropic, AWS, and JWT tests
+        let cloudInput = "Anthropic: sk-ant-api03-1234567890abcdef12345678 and AWS: AKIAIOSFODNN7EXAMPLE and JWT: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+        let cloudRedacted = redactor.redact(cloudInput)
+        XCTAssertTrue(cloudRedacted.contains("[REDACTED_ANTHROPIC_KEY]"))
+        XCTAssertTrue(cloudRedacted.contains("[REDACTED_AWS_KEY]"))
+        XCTAssertTrue(cloudRedacted.contains("[REDACTED_JWT]"))
+        XCTAssertFalse(cloudRedacted.contains("AKIAIOSFODNN7EXAMPLE"))
     }
 
     func testMasksAuthorizationHeadersAndEnvSecrets() {

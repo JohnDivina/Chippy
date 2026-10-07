@@ -18,6 +18,15 @@ public enum ToolKind: Sendable, Equatable, Hashable, Codable {
     case custom(String)
 }
 
+/// Categorizes failure reasons observed in telemetry.
+public enum ErrorReason: String, Sendable, Equatable, Codable {
+    case generic
+    case quotaExceeded
+    case rateLimited
+    case permissionDenied
+    case toolExecutionFailed
+}
+
 /// The normalized event stream model at the heart of Chippy.
 /// Neither the UI HUD nor the SpriteKit scene parse raw transcripts;
 /// all inputs are normalized into `AgentEvent` values.
@@ -34,6 +43,10 @@ public enum AgentEvent: Sendable, Equatable {
     case subagentSpawned(parentID: String, childID: String, task: String)
     case subagentFinished(childID: String)
     case agentMessage(agentID: String, text: String)
-    case error(agentID: String, message: String)
+    case error(agentID: String, message: String, reason: ErrorReason)
     case sessionEnded(sessionID: String)
+
+    public static func error(agentID: String, message: String) -> AgentEvent {
+        .error(agentID: agentID, message: message, reason: .generic)
+    }
 }

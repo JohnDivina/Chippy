@@ -105,7 +105,12 @@ public struct ActivityLogView: View {
             return "Subagent Finished"
         case .agentMessage:
             return "Model Response"
-        case .error(_, let msg):
+        case .error(_, let msg, let reason):
+            if reason == .quotaExceeded {
+                return "Quota Exceeded: \(msg)"
+            } else if reason == .rateLimited {
+                return "Rate Limited: \(msg)"
+            }
             return "Error: \(msg)"
         case .sessionEnded:
             return "Session Concluded"
@@ -126,7 +131,7 @@ public struct ActivityLogView: View {
             return summary
         case .agentMessage(_, let text):
             return text.components(separatedBy: "\n").first
-        case .error(_, let msg):
+        case .error(_, let msg, _):
             return msg
         default:
             return nil

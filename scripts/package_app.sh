@@ -20,9 +20,9 @@ mkdir -p "${MACOS_DIR}" "${RESOURCES_DIR}"
 cp ".build/release/Chippy" "${MACOS_DIR}/Chippy"
 chmod +x "${MACOS_DIR}/Chippy"
 
-# Copy resource bundles if generated
+# Copy resource bundles if generated (excluding test bundles)
 for bundle in .build/release/*.bundle; do
-    if [ -d "$bundle" ]; then
+    if [ -d "$bundle" ] && [[ "$bundle" != *Tests* ]]; then
         echo "📁 Copying resource bundle: $(basename "$bundle")"
         cp -R "$bundle" "${RESOURCES_DIR}/"
     fi

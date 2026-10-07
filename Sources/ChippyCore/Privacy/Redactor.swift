@@ -20,8 +20,17 @@ public struct Redactor: Sendable {
             }
         }
 
+        // Anthropic API keys: sk-ant-... (placed before general sk-)
+        addPattern(#"sk-ant-[A-Za-z0-9_-]{20,}"#, replacement: "[REDACTED_ANTHROPIC_KEY]")
+
         // OpenAI API keys: sk-...
         addPattern(#"sk-[A-Za-z0-9_-]{20,}"#, replacement: "[REDACTED_OPENAI_KEY]")
+
+        // AWS Access Keys: AKIA...
+        addPattern(#"\bAKIA[0-9A-Z]{16}\b"#, replacement: "[REDACTED_AWS_KEY]")
+
+        // JWT tokens: eyJ...
+        addPattern(#"eyJ[A-Za-z0-9-_]{10,}\.eyJ[A-Za-z0-9-_]{10,}\.[A-Za-z0-9-_]{10,}"#, replacement: "[REDACTED_JWT]")
 
         // Google API keys: AIza...
         addPattern(#"AIza[0-9A-Za-z-_]{30,45}"#, replacement: "[REDACTED_GOOGLE_KEY]")
@@ -38,8 +47,8 @@ public struct Redactor: Sendable {
         // PEM private keys
         addPattern(#"-----BEGIN [A-Z ]*PRIVATE KEY-----[a-zA-Z0-9+/=\s\n]+-----END [A-Z ]*PRIVATE KEY-----"#, replacement: "[REDACTED_PRIVATE_KEY]")
 
-        // Key-value secrets like API_KEY=xyz, PASSWORD=xyz, SECRET_KEY=xyz
-        addPattern(#"(?i)\b(API_KEY|SECRET|PASSWORD|AUTH_TOKEN|PRIVATE_KEY|ACCESS_TOKEN)\s*=\s*['"]?[^\s'"\n]{8,}['"]?"#, replacement: "$1=[REDACTED]")
+        // Key-value secrets like API_KEY=xyz, PASSWORD=xyz, SECRET_KEY=xyz, SUPABASE_SERVICE_ROLE_KEY=xyz
+        addPattern(#"(?i)\b(API_KEY|SECRET|PASSWORD|AUTH_TOKEN|PRIVATE_KEY|ACCESS_TOKEN|SUPABASE_KEY|SUPABASE_SERVICE_ROLE_KEY)\s*=\s*['"]?[^\s'"\n]{8,}['"]?"#, replacement: "$1=[REDACTED]")
 
         self.patterns = list
     }
@@ -82,8 +91,8 @@ public struct Redactor: Sendable {
             return event
         case .agentMessage(let agentID, let text):
             return .agentMessage(agentID: agentID, text: redact(text))
-        case .error(let agentID, let message):
-            return .error(agentID: agentID, message: redact(message))
+        case .error(let agentID, let message, let reason):
+            return .error(agentID: agentID, message: redact(message), reason: reason)
         case .sessionEnded:
             return event
         }
