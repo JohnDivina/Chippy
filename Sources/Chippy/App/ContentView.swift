@@ -17,6 +17,7 @@ public struct ContentView: View {
     @State private var loadedSkills: [SkillWorkshop] = []
     @State private var eventLog: [AgentEvent] = []
     @State private var isLiveAntigravityMode: Bool = true
+    @State private var dragAccumulator: CGSize = .zero
 
     public init() {
         let newScene = ParadiseScene(size: CGSize(width: 1024, height: 768))
@@ -48,14 +49,26 @@ public struct ContentView: View {
             }
             .ignoresSafeArea()
             .gesture(
-                DragGesture()
+                DragGesture(minimumDistance: 1)
                     .onChanged { value in
+                        let deltaX = value.translation.width - dragAccumulator.width
+                        let deltaY = value.translation.height - dragAccumulator.height
+                        dragAccumulator = value.translation
                         scene.panCamera(by: CGPoint(
-                            x: value.translation.width * 0.5,
-                            y: -value.translation.height * 0.5
+                            x: deltaX * scene.cameraNode.xScale,
+                            y: -deltaY * scene.cameraNode.yScale
                         ))
                     }
+                    .onEnded { _ in
+                        dragAccumulator = .zero
+                    }
             )
+
+            // Hidden shortcut button for quick camera reset (R)
+            Button("") { scene.resetCamera() }
+                .keyboardShortcut("r", modifiers: [])
+                .opacity(0)
+                .frame(width: 0, height: 0)
 
             // Anti-slop SwiftUI HUD
             ChippyHUDView(
@@ -176,6 +189,7 @@ public struct ContentView: View {
     }
 
     private func handleSelectSkill(_ skill: SkillWorkshop) {
+        scene.focusLandmark(key: skill.districtID.rawValue)
         let event = AgentEvent.skillLoaded(agentID: "scribe", skillName: skill.name)
         eventLog.append(event)
         director.handleEvent(event)

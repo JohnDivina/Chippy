@@ -69,7 +69,8 @@ public struct SkillScanner: Sendable {
             isRuined: false,
             parseError: nil,
             explicitDistrict: parsed.district,
-            metadata: parsed.metadata
+            metadata: parsed.metadata,
+            directivesBody: parsed.body
         )
     }
 

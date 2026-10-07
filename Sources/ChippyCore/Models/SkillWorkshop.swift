@@ -11,6 +11,11 @@ public struct SkillWorkshop: Sendable, Identifiable, Equatable {
     public let parseError: String?
     public let explicitDistrict: String?
     public let metadata: [String: String]
+    public let directivesBody: String?
+
+    public var whenToUse: String? {
+        metadata["when_to_use"] ?? metadata["when-to-use"]
+    }
 
     public init(
         id: String,
@@ -21,7 +26,8 @@ public struct SkillWorkshop: Sendable, Identifiable, Equatable {
         isRuined: Bool = false,
         parseError: String? = nil,
         explicitDistrict: String? = nil,
-        metadata: [String: String] = [:]
+        metadata: [String: String] = [:],
+        directivesBody: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -32,5 +38,6 @@ public struct SkillWorkshop: Sendable, Identifiable, Equatable {
         self.parseError = parseError
         self.explicitDistrict = explicitDistrict
         self.metadata = metadata
+        self.directivesBody = directivesBody
     }
 }

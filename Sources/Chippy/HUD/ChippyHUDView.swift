@@ -305,21 +305,26 @@ public struct ChippyHUDView: View {
             .buttonStyle(.plain)
             .help("Zoom In")
 
-            // Camera Center Button (Target Icon)
+            // Camera Center Button
             Button(action: onResetCamera) {
-                Image(systemName: "scope")
-                    .font(.system(size: 12))
-                    .foregroundColor(ChippyTheme.textPrimary)
-                    .padding(8)
-                    .background(ChippyTheme.surfaceBubble)
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(ChippyTheme.borderSubtle, lineWidth: 1)
-                    )
+                HStack(spacing: 5) {
+                    Image(systemName: "scope")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text("Center Island")
+                        .font(.system(size: 11, weight: .medium))
+                }
+                .foregroundColor(ChippyTheme.textPrimary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(ChippyTheme.surfaceBubble)
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(ChippyTheme.borderSubtle, lineWidth: 1)
+                )
             }
             .buttonStyle(.plain)
-            .help("Recenter Camera on Citadel")
+            .help("Recenter Camera on Sanctuary Island (Space / R / Double-Click)")
 
             // Toggle Log Drawer
             Button(action: { withAnimation { showActivityLog.toggle() } }) {

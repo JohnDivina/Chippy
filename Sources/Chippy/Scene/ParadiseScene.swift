@@ -99,46 +99,80 @@ public final class ParadiseScene: SKScene {
         }
     }
 
-    // MARK: - Camera Controls
+    // MARK: - Camera Controls & Island Bounds Clamping
+
+    public let cameraMinX: CGFloat = -180.0
+    public let cameraMaxX: CGFloat = 180.0
+    public let cameraMinY: CGFloat = -80.0
+    public let cameraMaxY: CGFloat = 150.0
 
     public func zoomIn() {
-        let newScale = max(0.4, cameraNode.xScale - 0.2)
+        let newScale = max(0.6, cameraNode.xScale - 0.2)
         cameraNode.run(SKAction.scale(to: newScale, duration: 0.2))
     }
 
     public func zoomOut() {
-        let newScale = min(3.0, cameraNode.xScale + 0.2)
+        let newScale = min(1.6, cameraNode.xScale + 0.2)
         cameraNode.run(SKAction.scale(to: newScale, duration: 0.2))
     }
 
     public func zoomCamera(by delta: CGFloat) {
-        let newScale = max(0.4, min(3.0, cameraNode.xScale - delta * 0.1))
+        let newScale = max(0.6, min(1.6, cameraNode.xScale - delta * 0.1))
         cameraNode.setScale(newScale)
     }
 
     public func panCamera(by delta: CGPoint) {
+        let newX = cameraNode.position.x - delta.x
+        let newY = cameraNode.position.y - delta.y
         cameraNode.position = CGPoint(
-            x: cameraNode.position.x - delta.x,
-            y: cameraNode.position.y + delta.y
+            x: max(cameraMinX, min(cameraMaxX, newX)),
+            y: max(cameraMinY, min(cameraMaxY, newY))
         )
     }
 
     public func resetCamera() {
-        let move = SKAction.move(to: CGPoint(x: 0, y: 40), duration: 0.3)
-        let scale = SKAction.scale(to: 1.0, duration: 0.3)
+        let move = SKAction.move(to: CGPoint(x: 0, y: 40), duration: 0.35)
+        move.timingMode = .easeInEaseOut
+        let scale = SKAction.scale(to: 1.0, duration: 0.35)
+        scale.timingMode = .easeInEaseOut
         cameraNode.run(SKAction.group([move, scale]))
     }
 
+    public func focusLandmark(key: String) {
+        guard let pos = islandMap.positionFor(landmarkKey: key) else { return }
+        let targetX = max(cameraMinX, min(cameraMaxX, pos.x))
+        let targetY = max(cameraMinY, min(cameraMaxY, pos.y + 20))
+        let move = SKAction.move(to: CGPoint(x: targetX, y: targetY), duration: 0.4)
+        move.timingMode = .easeInEaseOut
+        cameraNode.run(move)
+        islandMap.activateWorkshop(key: key)
+    }
+
     public override func scrollWheel(with event: NSEvent) {
-        let delta = event.deltaY
-        if delta != 0 {
-            let newScale = max(0.4, min(3.0, cameraNode.xScale - delta * 0.04))
-            cameraNode.setScale(newScale)
+        if event.hasPreciseScrollingDeltas {
+            // Trackpad two-finger smooth pan
+            let dx = event.scrollingDeltaX * cameraNode.xScale * 0.75
+            let dy = event.scrollingDeltaY * cameraNode.yScale * 0.75
+            panCamera(by: CGPoint(x: dx, y: -dy))
+        } else {
+            // Discrete mouse wheel zoom
+            let delta = event.deltaY
+            if delta > 0 {
+                zoomIn()
+            } else if delta < 0 {
+                zoomOut()
+            }
         }
     }
 
     public override func magnify(with event: NSEvent) {
-        let newScale = max(0.4, min(3.0, cameraNode.xScale * (1.0 - event.magnification)))
+        let newScale = max(0.6, min(1.6, cameraNode.xScale * (1.0 - event.magnification)))
         cameraNode.setScale(newScale)
+    }
+
+    public override func mouseDown(with event: NSEvent) {
+        if event.clickCount == 2 {
+            resetCamera()
+        }
     }
 }
