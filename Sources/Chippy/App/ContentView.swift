@@ -174,6 +174,11 @@ public struct ContentView: View {
         eventLog.append(userEvent)
         director.handleEvent(userEvent)
 
+        // Forward prompt directly to active Antigravity session if in Live mode
+        if isLiveAntigravityMode {
+            AntigravityBridge.forwardPromptToAntigravity(prompt)
+        }
+
         // Trigger Sovereign thinking and familiar delegation animation
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             let thinkEvent = AgentEvent.thinking(agentID: "sovereign")
@@ -182,7 +187,10 @@ public struct ContentView: View {
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
-            let msgEvent = AgentEvent.agentMessage(agentID: "sovereign", text: "Quest logged in diorama! Note: Live coding is driven directly from your active Antigravity session.")
+            let msgText = isLiveAntigravityMode
+                ? "Quest dispatched directly to active Antigravity session!"
+                : "Quest logged in local diorama."
+            let msgEvent = AgentEvent.agentMessage(agentID: "sovereign", text: msgText)
             eventLog.append(msgEvent)
             director.handleEvent(msgEvent)
         }

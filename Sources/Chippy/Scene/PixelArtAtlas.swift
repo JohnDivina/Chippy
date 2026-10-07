@@ -27,9 +27,7 @@ public final class PixelArtAtlas: @unchecked Sendable {
         @inline(__always)
         public func setPixel(_ x: Int, _ y: Int, _ color: UInt32) {
             guard x >= 0, x < width, y >= 0, y < height else { return }
-            // Flips Y so y=0 is top, natural for sprite drawing
-            let flippedY = (height - 1) - y
-            let idx = (flippedY * width + x) * 4
+            let idx = (y * width + x) * 4
             let r = UInt8((color >> 24) & 0xFF)
             let g = UInt8((color >> 16) & 0xFF)
             let b = UInt8((color >> 8) & 0xFF)
@@ -801,6 +799,151 @@ public final class PixelArtAtlas: @unchecked Sendable {
             // Walking split feet
             c.fillRect(x: 7, y: 23, w: 3, h: 6, color: cShoes)
             c.fillRect(x: 14, y: 25, w: 3, h: 4, color: cShoes)
+        }
+
+        let tex = c.makeTexture()
+        cache.setObject(tex, forKey: key)
+        return tex
+    }
+
+    // MARK: - Pets & Wildlife (Dog, Cat, Birds)
+
+    public func petDog(frame: Int = 0) -> SKTexture {
+        let key = "pet_dog_\(frame)" as NSString
+        if let cached = cache.object(forKey: key) { return cached }
+
+        let c = Canvas(width: 24, height: 18)
+        let cFur: UInt32     = 0xD4A373FF // Golden retriever coat
+        let cFurDark: UInt32 = 0x99582AFF // Dark ear & tail shadow
+        let cFurLight: UInt32 = 0xFAEDCDFF // Muzzle highlight
+        let cCollar: UInt32  = 0xE63946FF // Red collar
+        let cEyesNose: UInt32 = 0x1A1A1AFF
+
+        // Body
+        c.fillRect(x: 5, y: 7, w: 12, h: 6, color: cFur)
+
+        // Head
+        c.fillRect(x: 13, y: 3, w: 7, h: 6, color: cFur)
+        // Muzzle
+        c.fillRect(x: 17, y: 5, w: 4, h: 4, color: cFurLight)
+        c.setPixel(20, y: 5, cEyesNose) // Nose
+        c.setPixel(16, y: 4, cEyesNose) // Eye
+
+        // Floppy Ear
+        c.fillRect(x: 13, y: 4, w: 3, h: 5, color: cFurDark)
+
+        // Red collar
+        c.fillRect(x: 13, y: 8, w: 2, h: 3, color: cCollar)
+
+        // Tail (wags)
+        if frame == 0 {
+            c.fillRect(x: 2, y: 4, w: 4, h: 3, color: cFurDark) // Tail up
+            c.setPixel(1, y: 3, cFurDark)
+        } else {
+            c.fillRect(x: 1, y: 7, w: 4, h: 3, color: cFurDark) // Tail out
+        }
+
+        // 4 Paws / Legs (walking cycle)
+        if frame == 0 {
+            c.fillRect(x: 6, y: 13, w: 2, h: 4, color: cFur)
+            c.fillRect(x: 9, y: 13, w: 2, h: 4, color: cFurDark)
+            c.fillRect(x: 14, y: 13, w: 2, h: 4, color: cFur)
+            c.fillRect(x: 17, y: 13, w: 2, h: 4, color: cFurDark)
+        } else {
+            c.fillRect(x: 5, y: 12, w: 2, h: 5, color: cFur)
+            c.fillRect(x: 10, y: 13, w: 2, h: 4, color: cFurDark)
+            c.fillRect(x: 13, y: 13, w: 2, h: 4, color: cFur)
+            c.fillRect(x: 18, y: 12, w: 2, h: 5, color: cFurDark)
+        }
+
+        let tex = c.makeTexture()
+        cache.setObject(tex, forKey: key)
+        return tex
+    }
+
+    public func petCat(frame: Int = 0) -> SKTexture {
+        let key = "pet_cat_\(frame)" as NSString
+        if let cached = cache.object(forKey: key) { return cached }
+
+        let c = Canvas(width: 20, height: 16)
+        let cCoat: UInt32   = 0xE76F51FF // Ginger tabby orange
+        let cStripe: UInt32 = 0xBC6C25FF // Dark tabby stripe
+        let cWhite: UInt32  = 0xF8F9FAFF // White paws & muzzle
+        let cEyeGreen: UInt32 = 0x2A9D8FFF // Cat emerald eyes
+
+        // Body
+        c.fillRect(x: 4, y: 6, w: 10, h: 5, color: cCoat)
+        c.fillRect(x: 7, y: 6, w: 1, h: 5, color: cStripe)
+        c.fillRect(x: 10, y: 6, w: 1, h: 5, color: cStripe)
+
+        // Head
+        c.fillRect(x: 11, y: 3, w: 6, h: 5, color: cCoat)
+        // Pointed ears
+        c.setPixel(12, y: 1, cCoat)
+        c.setPixel(15, y: 1, cCoat)
+        c.setPixel(12, y: 2, 0xFFA5ABFF) // Pink inner ear
+        c.setPixel(15, y: 2, 0xFFA5ABFF)
+
+        // Face
+        c.setPixel(14, y: 4, cEyeGreen) // Green eye
+        c.fillRect(x: 15, y: 5, w: 2, h: 2, color: cWhite) // White muzzle
+
+        // Curled Tail
+        if frame == 0 {
+            c.fillRect(x: 1, y: 4, w: 3, h: 4, color: cStripe)
+            c.setPixel(2, y: 3, cStripe)
+        } else {
+            c.fillRect(x: 1, y: 6, w: 3, h: 2, color: cStripe)
+            c.setPixel(0, y: 5, cStripe)
+        }
+
+        // Legs & White Paws
+        if frame == 0 {
+            c.fillRect(x: 5, y: 11, w: 2, h: 3, color: cCoat)
+            c.fillRect(x: 5, y: 14, w: 2, h: 1, color: cWhite)
+            c.fillRect(x: 12, y: 11, w: 2, h: 3, color: cCoat)
+            c.fillRect(x: 12, y: 14, w: 2, h: 1, color: cWhite)
+        } else {
+            c.fillRect(x: 4, y: 11, w: 2, h: 3, color: cCoat)
+            c.fillRect(x: 4, y: 14, w: 2, h: 1, color: cWhite)
+            c.fillRect(x: 13, y: 11, w: 2, h: 3, color: cCoat)
+            c.fillRect(x: 13, y: 14, w: 2, h: 1, color: cWhite)
+        }
+
+        let tex = c.makeTexture()
+        cache.setObject(tex, forKey: key)
+        return tex
+    }
+
+    public func flyingBird(frame: Int = 0) -> SKTexture {
+        let key = "flying_bird_\(frame)" as NSString
+        if let cached = cache.object(forKey: key) { return cached }
+
+        let c = Canvas(width: 14, height: 14)
+        let cBody: UInt32 = 0x6F4E37FF // Warm brown sparrow
+        let cChest: UInt32 = 0xD2B48CFF // Buff chest
+        let cBeak: UInt32 = 0xF4A261FF
+
+        // Head & Body
+        c.fillRect(x: 4, y: 5, w: 5, h: 4, color: cBody)
+        c.fillRect(x: 7, y: 6, w: 2, h: 3, color: cChest)
+        c.setPixel(9, y: 6, cBeak) // Yellow beak
+        c.setPixel(7, y: 5, 0x1A1A1AFF) // Eye
+
+        // Tail feathers
+        c.fillRect(x: 1, y: 7, w: 3, h: 2, color: 0x4A3322FF)
+
+        if frame == 0 {
+            // Perched: wings folded
+            c.fillRect(x: 3, y: 5, w: 3, h: 3, color: 0x4A3322FF)
+            // Tiny feet
+            c.setPixel(5, y: 9, 0xE76F51FF)
+            c.setPixel(7, y: 9, 0xE76F51FF)
+        } else {
+            // In flight: wings spread wide
+            c.fillRect(x: 4, y: 1, w: 4, h: 3, color: 0x4A3322FF) // Wing up
+            c.fillRect(x: 2, y: 2, w: 2, h: 2, color: 0x4A3322FF)
+            c.fillRect(x: 4, y: 9, w: 3, h: 2, color: 0x4A3322FF) // Wing down
         }
 
         let tex = c.makeTexture()

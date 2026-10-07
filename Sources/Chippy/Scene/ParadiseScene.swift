@@ -101,10 +101,10 @@ public final class ParadiseScene: SKScene {
 
     // MARK: - Camera Controls & Island Bounds Clamping
 
-    public let cameraMinX: CGFloat = -180.0
-    public let cameraMaxX: CGFloat = 180.0
-    public let cameraMinY: CGFloat = -80.0
-    public let cameraMaxY: CGFloat = 150.0
+    public let cameraMinX: CGFloat = -260.0
+    public let cameraMaxX: CGFloat = 260.0
+    public let cameraMinY: CGFloat = -140.0
+    public let cameraMaxY: CGFloat = 200.0
 
     public func zoomIn() {
         let newScale = max(0.6, cameraNode.xScale - 0.2)
