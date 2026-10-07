@@ -24,7 +24,8 @@ public final class SceneDirector {
 
         case .userPrompt(let text):
             scene.setWorkshopWorking(key: "citadel", isWorking: true, task: "New Quest")
-            scene.familiarNode(for: .sovereign)?.showThought(text: "Quest: \(text)", duration: 5.0, isWorking: true)
+            let promptSummary = text.count > 45 ? String(text.prefix(42)) + "…" : text
+            scene.familiarNode(for: .sovereign)?.showThought(text: "Quest: \(promptSummary)", duration: 5.0, isWorking: true)
 
         case .thinking:
             scene.setWorkshopWorking(key: DistrictID.highCouncil.rawValue, isWorking: true, task: "Reasoning")
@@ -86,8 +87,9 @@ public final class SceneDirector {
             }
 
         case .agentMessage(_, let text):
-            let summary = text.components(separatedBy: "\n").first ?? text
-            scene.familiarNode(for: .sovereign)?.showThought(text: summary, duration: 5.0)
+            let firstLine = text.components(separatedBy: "\n").first ?? text
+            let displaySummary = firstLine.count > 45 ? String(firstLine.prefix(42)) + "…" : firstLine
+            scene.familiarNode(for: .sovereign)?.showThought(text: displaySummary, duration: 6.0)
 
             // Settle workshops back to peaceful state after message delivery
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in

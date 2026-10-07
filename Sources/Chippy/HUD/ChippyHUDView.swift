@@ -9,6 +9,7 @@ public struct ChippyHUDView: View {
     @Binding public var currentSpeed: PlaybackSpeed
     @Binding public var currentProgress: Int
     @Binding public var isLiveAntigravityMode: Bool
+    @Binding public var latestResponse: String?
 
     public let totalEvents: Int
     public let skills: [SkillWorkshop]
@@ -29,6 +30,7 @@ public struct ChippyHUDView: View {
     @State private var showActivityLog: Bool = true
     @State private var showSkillCodex: Bool = false
     @State private var showModelSelector: Bool = false
+    @State private var showResponseView: Bool = false
     @State private var promptText: String = ""
 
     public init(
@@ -37,6 +39,7 @@ public struct ChippyHUDView: View {
         currentSpeed: Binding<PlaybackSpeed>,
         currentProgress: Binding<Int>,
         isLiveAntigravityMode: Binding<Bool>,
+        latestResponse: Binding<String?> = .constant(nil),
         totalEvents: Int,
         skills: [SkillWorkshop],
         events: [AgentEvent],
@@ -57,6 +60,7 @@ public struct ChippyHUDView: View {
         self._currentSpeed = currentSpeed
         self._currentProgress = currentProgress
         self._isLiveAntigravityMode = isLiveAntigravityMode
+        self._latestResponse = latestResponse
         self.totalEvents = totalEvents
         self.skills = skills
         self.events = events
@@ -74,37 +78,63 @@ public struct ChippyHUDView: View {
     }
 
     public var body: some View {
-        VStack(spacing: 0) {
-            // TOP BAR
-            topBarView
-                .padding(.horizontal, 16)
-                .padding(.top, 14)
-
-            Spacer()
-
-            // FLOATING PROMPT CHATBOX (Center Bottom)
-            PromptChatboxView(
-                promptText: $promptText,
-                isLiveMode: isLiveAntigravityMode,
-                onToggleLiveMode: onToggleLiveMode,
-                onSubmitPrompt: onSubmitPrompt
-            )
-            .frame(maxWidth: 620)
-            .padding(.bottom, 12)
-
-            // BOTTOM BAR & LOG DRAWER
-            HStack(alignment: .bottom, spacing: 14) {
-                if showActivityLog {
-                    ActivityLogView(events: events)
-                        .frame(width: 380, height: 210)
-                        .transition(.move(edge: .leading).combined(with: .opacity))
-                }
+        ZStack {
+            VStack(spacing: 0) {
+                // TOP BAR
+                topBarView
+                    .padding(.horizontal, 16)
+                    .padding(.top, 14)
 
                 Spacer()
 
-                bottomControlsView
+                // FLOATING PROMPT CHATBOX (Center Bottom)
+                PromptChatboxView(
+                    promptText: $promptText,
+                    isLiveMode: isLiveAntigravityMode,
+                    onToggleLiveMode: onToggleLiveMode,
+                    onSubmitPrompt: onSubmitPrompt
+                )
+                .frame(maxWidth: 620)
+                .padding(.bottom, 12)
+
+                // BOTTOM BAR & LOG DRAWER
+                HStack(alignment: .bottom, spacing: 14) {
+                    if showActivityLog {
+                        ActivityLogView(events: events)
+                            .frame(width: 380, height: 210)
+                            .transition(.move(edge: .leading).combined(with: .opacity))
+                    }
+
+                    Spacer()
+
+                    bottomControlsView
+                }
+                .padding(16)
             }
-            .padding(16)
+
+            // FLOATING COUNCIL RESPONSE INSPECTOR
+            if showResponseView, let response = latestResponse, !response.isEmpty {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.easeOut(duration: 0.15)) { showResponseView = false }
+                    }
+
+                AgentResponseView(
+                    responseText: response,
+                    modelName: activeModelName,
+                    onClose: { withAnimation(.easeOut(duration: 0.15)) { showResponseView = false } }
+                )
+                .transition(.scale(scale: 0.95).combined(with: .opacity))
+                .zIndex(50)
+            }
+        }
+        .onChange(of: latestResponse) { _, newResponse in
+            if let newResponse, !newResponse.isEmpty {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    showResponseView = true
+                }
+            }
         }
         .sheet(isPresented: $showSkillCodex) {
             SkillCodexView(
@@ -325,6 +355,30 @@ public struct ChippyHUDView: View {
             }
             .buttonStyle(.plain)
             .help("Recenter Camera on Sanctuary Island (Space / R / Double-Click)")
+
+            // Council Dispatch Button (if response available)
+            if let response = latestResponse, !response.isEmpty {
+                Button(action: { withAnimation(.easeOut(duration: 0.15)) { showResponseView.toggle() } }) {
+                    HStack(spacing: 5) {
+                        Circle()
+                            .fill(ChippyTheme.statusDot)
+                            .frame(width: 5, height: 5)
+                        Text("Dispatch")
+                            .font(.system(size: 11, weight: .semibold))
+                    }
+                    .foregroundColor(ChippyTheme.textPrimary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(ChippyTheme.surfaceBubble)
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(ChippyTheme.borderSubtle, lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+                .help("Open Full Council Dispatch Response")
+            }
 
             // Toggle Log Drawer
             Button(action: { withAnimation { showActivityLog.toggle() } }) {
