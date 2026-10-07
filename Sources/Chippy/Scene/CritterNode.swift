@@ -8,6 +8,7 @@ public final class CritterNode: SKNode {
     public enum CritterType {
         case dog
         case cat
+        case whiteCat
         case bird
     }
 
@@ -27,6 +28,7 @@ public final class CritterNode: SKNode {
             switch type {
             case .dog: return PixelArtAtlas.shared.petDog(frame: 0)
             case .cat: return PixelArtAtlas.shared.petCat(frame: 0)
+            case .whiteCat: return PixelArtAtlas.shared.petWhiteCat(frame: 0)
             case .bird: return PixelArtAtlas.shared.flyingBird(frame: 0)
             }
         }()
@@ -66,7 +68,7 @@ public final class CritterNode: SKNode {
         switch critterType {
         case .dog:
             scheduleNextDogAction()
-        case .cat:
+        case .cat, .whiteCat:
             scheduleNextCatAction()
         case .bird:
             scheduleNextBirdAction()
@@ -142,8 +144,18 @@ public final class CritterNode: SKNode {
         spriteNode.xScale = (targetPt.x < position.x) ? -1.0 : 1.0
 
         // 2-frame walking cycle
-        let f0 = (critterType == .dog) ? PixelArtAtlas.shared.petDog(frame: 0) : PixelArtAtlas.shared.petCat(frame: 0)
-        let f1 = (critterType == .dog) ? PixelArtAtlas.shared.petDog(frame: 1) : PixelArtAtlas.shared.petCat(frame: 1)
+        let (f0, f1): (SKTexture, SKTexture) = {
+            switch critterType {
+            case .dog:
+                return (PixelArtAtlas.shared.petDog(frame: 0), PixelArtAtlas.shared.petDog(frame: 1))
+            case .cat:
+                return (PixelArtAtlas.shared.petCat(frame: 0), PixelArtAtlas.shared.petCat(frame: 1))
+            case .whiteCat:
+                return (PixelArtAtlas.shared.petWhiteCat(frame: 0), PixelArtAtlas.shared.petWhiteCat(frame: 1))
+            case .bird:
+                return (PixelArtAtlas.shared.flyingBird(frame: 0), PixelArtAtlas.shared.flyingBird(frame: 1))
+            }
+        }()
         let stepAnim = SKAction.repeatForever(SKAction.animate(with: [f0, f1], timePerFrame: 0.16))
         spriteNode.run(stepAnim, withKey: "walkStep")
 
@@ -163,11 +175,12 @@ public final class CritterNode: SKNode {
 
     private func catSitAndPurr(completion: @escaping () -> Void) {
         isBusy = true
-        let sit = PixelArtAtlas.shared.petCat(frame: 0)
+        let sit = (critterType == .whiteCat) ? PixelArtAtlas.shared.petWhiteCat(frame: 0) : PixelArtAtlas.shared.petCat(frame: 0)
+        let twitchTex = (critterType == .whiteCat) ? PixelArtAtlas.shared.petWhiteCat(frame: 1) : PixelArtAtlas.shared.petCat(frame: 1)
         spriteNode.texture = sit
         // Gentle tail curl twitch
         let twitch0 = SKAction.run { [weak self] in
-            self?.spriteNode.texture = PixelArtAtlas.shared.petCat(frame: 1)
+            self?.spriteNode.texture = twitchTex
         }
         let twitch1 = SKAction.run { [weak self] in
             self?.spriteNode.texture = sit

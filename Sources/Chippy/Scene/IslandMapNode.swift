@@ -5,7 +5,7 @@ import ChippyCore
 /// Renders the expanded floating sanctuary island using authentic Stardew Valley-inspired pixel art:
 /// lush dithered meadow grass with wildflowers, earthen cobblestone trails, expansive pumpkin garden plots,
 /// a tranquil water pond with lily pads, rustic cedar fences, apple trees, street lanterns,
-/// and roaming farm animals (1 dog, 1 cat, and fluttering sparrows).
+/// and roaming farm animals (1 dog, 2 cats - ginger tabby & snow white, and fluttering sparrows).
 public final class IslandMapNode: SKNode {
     public let grid: IsometricGrid
     private var workshopNodes: [String: WorkshopNode] = [:]
@@ -216,7 +216,12 @@ public final class IslandMapNode: SKNode {
         addChild(cat)
         critters.append(cat)
 
-        // 3. Ambient Birds (Sparrows & doves perching and fluttering)
+        // 3. Snow White Farm Cat (Sapphire-eyed white cat wandering near Grand Atelier & orchard)
+        let whiteCat = CritterNode(type: .whiteCat, startGrid: GridPoint(col: -1, row: 3), grid: grid)
+        addChild(whiteCat)
+        critters.append(whiteCat)
+
+        // 4. Ambient Birds (Sparrows & doves perching and fluttering)
         let bird1 = CritterNode(type: .bird, startGrid: GridPoint(col: 3, row: 1), grid: grid)
         addChild(bird1)
         critters.append(bird1)

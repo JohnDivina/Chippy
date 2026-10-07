@@ -561,18 +561,21 @@ public final class PixelArtAtlas: @unchecked Sendable {
         if let cached = cache.object(forKey: key) { return cached }
 
         let c = Canvas(width: 64, height: 60)
-        let cWall: UInt32      = 0xE9D8A6FF // Warm cedar stucco
-        let cShingle: UInt32   = 0xAE2012FF // Terracotta artisan tiles
-        let cShingleHi: UInt32 = 0xCA6702FF
-        let cGlass: UInt32     = 0x94D2BDFF // Artisan glass
-        let cFlowerRed: UInt32 = 0xE63946FF
-        let cFlowerYel: UInt32 = 0xFFB703FF
-        let cLeaf: UInt32      = 0x2D6A4FFF
+        let cWall: UInt32      = 0xF5E3E8FF // Soft dusty blush cottage stucco
+        let cWallShadow: UInt32 = 0xE8CCD5FF // Shaded rose stucco
+        let cShingle: UInt32   = 0xBE5A77FF // Muted rose quartz artisan roof shingles
+        let cShingleHi: UInt32 = 0xD97996FF // Soft cherry blossom shingle highlight
+        let cTrim: UInt32      = 0x6E394BFF // Deep vintage rosewood timber trim
+        let cGlass: UInt32     = 0xD8B4C0FF // Soft rose-tinted artisan glass
+        let cFlowerPink: UInt32 = 0xFFAEC9FF // Blooming pink cherry blossoms
+        let cFlowerWhite: UInt32 = 0xFFFFFFFF // White petals
+        let cLeaf: UInt32      = 0x3E6B54FF // Muted sage leaves
 
         // Walls
         c.fillRect(x: 14, y: 24, w: 38, h: 32, color: cWall)
+        c.fillRect(x: 14, y: 52, w: 38, h: 4, color: cWallShadow)
 
-        // Curved Artisan Roof
+        // Curved Artisan Roof (Pink / Rose Quartz palette)
         for row in 0..<14 {
             let y = 12 + row
             let w = 42 + (row * 2)
@@ -581,20 +584,20 @@ public final class PixelArtAtlas: @unchecked Sendable {
 
         // Bay Window with Flower Box
         c.fillRect(x: 18, y: 32, w: 14, h: 12, color: cGlass)
-        // Window mullions
-        c.fillRect(x: 24, y: 32, w: 2, h: 12, color: 0x6E4A2EFF)
-        c.fillRect(x: 18, y: 37, w: 14, h: 2, color: 0x6E4A2EFF)
+        // Window mullions (rosewood)
+        c.fillRect(x: 24, y: 32, w: 2, h: 12, color: cTrim)
+        c.fillRect(x: 18, y: 37, w: 14, h: 2, color: cTrim)
         // Flower Box under window
-        c.fillRect(x: 17, y: 44, w: 16, h: 4, color: 0x5C3A1EFF)
+        c.fillRect(x: 17, y: 44, w: 16, h: 4, color: cTrim)
         // Blooming Flowers
         c.fillRect(x: 18, y: 42, w: 14, h: 2, color: cLeaf)
-        c.setPixel(19, y: 41, cFlowerRed)
-        c.setPixel(22, y: 41, cFlowerYel)
-        c.setPixel(25, y: 41, cFlowerRed)
-        c.setPixel(28, y: 41, cFlowerYel)
+        c.setPixel(19, y: 41, cFlowerPink)
+        c.setPixel(22, y: 41, cFlowerWhite)
+        c.setPixel(25, y: 41, cFlowerPink)
+        c.setPixel(28, y: 41, cFlowerWhite)
 
-        // Cozy Wooden Door
-        c.fillRect(x: 37, y: 34, w: 10, h: 20, color: 0x774936FF)
+        // Cozy Wooden Door (Rosewood)
+        c.fillRect(x: 37, y: 34, w: 10, h: 20, color: cTrim)
         c.fillRect(x: 39, y: 36, w: 6, h: 6, color: cGlass) // Door window
 
         let tex = c.makeTexture()
@@ -908,6 +911,66 @@ public final class PixelArtAtlas: @unchecked Sendable {
             c.fillRect(x: 4, y: 14, w: 2, h: 1, color: cWhite)
             c.fillRect(x: 13, y: 11, w: 2, h: 3, color: cCoat)
             c.fillRect(x: 13, y: 14, w: 2, h: 1, color: cWhite)
+        }
+
+        let tex = c.makeTexture()
+        cache.setObject(tex, forKey: key)
+        return tex
+    }
+
+    /// Renders an authentic Stardew Valley-inspired snow white cat with sapphire blue eyes and pastel pink inner ears.
+    public func petWhiteCat(frame: Int = 0) -> SKTexture {
+        let key = "pet_white_cat_\(frame)" as NSString
+        if let cached = cache.object(forKey: key) { return cached }
+
+        let c = Canvas(width: 20, height: 16)
+        let cCoat: UInt32     = 0xFAFAFAFF // Snow white fur
+        let cShade: UInt32    = 0xDFDFE4FF // Soft pearl gray shading
+        let cPinkEar: UInt32  = 0xFFA5ABFF // Pastel pink inner ear
+        let cEyeBlue: UInt32  = 0x3A86FFFF // Sapphire blue eye
+        let cNosePink: UInt32 = 0xF4A261FF // Small cute nose
+
+        // Body
+        c.fillRect(x: 4, y: 6, w: 10, h: 5, color: cCoat)
+        c.fillRect(x: 4, y: 10, w: 10, h: 1, color: cShade) // Underbelly soft shadow
+        c.fillRect(x: 7, y: 6, w: 1, h: 4, color: cShade)   // Fluff contours
+        c.fillRect(x: 10, y: 6, w: 1, h: 4, color: cShade)
+
+        // Head
+        c.fillRect(x: 11, y: 3, w: 6, h: 5, color: cCoat)
+        c.fillRect(x: 11, y: 7, w: 6, h: 1, color: cShade)
+        // Pointed ears
+        c.setPixel(12, y: 1, cCoat)
+        c.setPixel(15, y: 1, cCoat)
+        c.setPixel(12, y: 2, cPinkEar)
+        c.setPixel(15, y: 2, cPinkEar)
+
+        // Face
+        c.setPixel(14, y: 4, cEyeBlue)  // Sapphire blue eye
+        c.setPixel(16, y: 5, cNosePink) // Cute pink nose
+
+        // Curled Fluffy Tail
+        if frame == 0 {
+            c.fillRect(x: 1, y: 4, w: 3, h: 4, color: cCoat)
+            c.setPixel(2, y: 3, cCoat)
+            c.fillRect(x: 1, y: 7, w: 3, h: 1, color: cShade)
+        } else {
+            c.fillRect(x: 1, y: 6, w: 3, h: 2, color: cCoat)
+            c.setPixel(0, y: 5, cCoat)
+            c.fillRect(x: 1, y: 7, w: 3, h: 1, color: cShade)
+        }
+
+        // Legs & Paws
+        if frame == 0 {
+            c.fillRect(x: 5, y: 11, w: 2, h: 3, color: cCoat)
+            c.fillRect(x: 5, y: 13, w: 2, h: 1, color: cShade)
+            c.fillRect(x: 12, y: 11, w: 2, h: 3, color: cCoat)
+            c.fillRect(x: 12, y: 13, w: 2, h: 1, color: cShade)
+        } else {
+            c.fillRect(x: 4, y: 11, w: 2, h: 3, color: cCoat)
+            c.fillRect(x: 4, y: 13, w: 2, h: 1, color: cShade)
+            c.fillRect(x: 13, y: 11, w: 2, h: 3, color: cCoat)
+            c.fillRect(x: 13, y: 13, w: 2, h: 1, color: cShade)
         }
 
         let tex = c.makeTexture()
