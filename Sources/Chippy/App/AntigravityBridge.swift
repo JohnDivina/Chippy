@@ -49,20 +49,5 @@ public struct AntigravityBridge: Sendable {
 
             NSApp.activate(ignoringOtherApps: true)
         }
-
-        // 2. Also notify the agent message bus in the background
-        DispatchQueue.global(qos: .utility).async {
-            guard let conversationID = SessionLocator().findLatestConversationID() else { return }
-            let agentAPIPath = FileManager.default.homeDirectoryForCurrentUser
-                .appendingPathComponent(".gemini/antigravity-ide/bin/agentapi").path
-
-            guard FileManager.default.isExecutableFile(atPath: agentAPIPath) else { return }
-
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: agentAPIPath)
-            process.arguments = ["send-message", "--title=Chippy Quest", conversationID, prompt]
-            try? process.run()
-            process.waitUntilExit()
-        }
     }
 }
