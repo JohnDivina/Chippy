@@ -36,4 +36,14 @@ public struct SessionLocator: Sendable {
         candidateTranscripts.sort { $0.date > $1.date }
         return candidateTranscripts.first?.url
     }
+
+    /// Finds the active conversation ID corresponding to the latest modified transcript.
+    public func findLatestConversationID(baseBrainURL: URL? = nil) -> String? {
+        guard let url = findLatestTranscriptURL(baseBrainURL: baseBrainURL) else { return nil }
+        // URL path: ~/.gemini/antigravity-ide/brain/<conversation_id>/.system_generated/logs/transcript.jsonl
+        let brainFolder = url
+            .deletingLastPathComponent() // logs
+            .deletingLastPathComponent() // .system_generated
+        return brainFolder.lastPathComponent
+    }
 }

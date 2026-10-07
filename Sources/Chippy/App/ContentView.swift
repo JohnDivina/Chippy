@@ -174,23 +174,55 @@ public struct ContentView: View {
         eventLog.append(userEvent)
         director.handleEvent(userEvent)
 
-        // Forward prompt directly to active Antigravity session if in Live mode
+        // 1. Forward prompt seamlessly to active Antigravity session in background
         if isLiveAntigravityMode {
             AntigravityBridge.forwardPromptToAntigravity(prompt)
         }
 
-        // Trigger Sovereign thinking and familiar delegation animation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+        // 2. Sovereign begins reasoning & planning
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             let thinkEvent = AgentEvent.thinking(agentID: "sovereign")
             eventLog.append(thinkEvent)
             director.handleEvent(thinkEvent)
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
-            let msgText = isLiveAntigravityMode
-                ? "Quest dispatched directly to active Antigravity session!"
-                : "Quest logged in local diorama."
-            let msgEvent = AgentEvent.agentMessage(agentID: "sovereign", text: msgText)
+        // 3. Intelligent conversational response & familiar choreography
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
+            let lower = prompt.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+            let replyText: String
+
+            if lower.contains("how are you") || lower.contains("how are u") || lower.contains("whats up") {
+                replyText = "I am doing wonderfully! The realm is serene, our 6 familiars are active across all 7 districts, and all \(loadedSkills.count) production skills are armed and ready."
+            } else if lower.contains("hello") || lower.contains("hi") || lower.contains("hey") || lower.contains("greetings") {
+                replyText = "Greetings, Sovereign! The paradise diorama is standing by. What shall we construct or explore today?"
+            } else if lower.contains("skill") || lower.contains("codex") || lower.contains("production") {
+                replyText = "We have \(loadedSkills.count) production skills equipped across Security, Architecture, Frontend, and Systems. Scribe is ready to consult any skill!"
+                let skillEvent = AgentEvent.skillLoaded(agentID: "scribe", skillName: "Security & Skills Codex")
+                eventLog.append(skillEvent)
+                director.handleEvent(skillEvent)
+            } else if lower.contains("test") || lower.contains("check") || lower.contains("verify") {
+                replyText = "Dispatching Sentinel and Mason to verify the build and run our unit tests."
+                let testEvent = AgentEvent.toolCall(agentID: "sentinel", tool: .test, summary: "Running test suite")
+                eventLog.append(testEvent)
+                director.handleEvent(testEvent)
+            } else if lower.contains("security") || lower.contains("rls") || lower.contains("idor") {
+                replyText = "Sentinel is actively enforcing security hardening directives: mandatory RLS, anti-IDOR scoping, and rate limiting."
+                let secEvent = AgentEvent.toolCall(agentID: "sentinel", tool: .custom("Security Audit"), summary: "Auditing RLS & IDOR policies")
+                eventLog.append(secEvent)
+                director.handleEvent(secEvent)
+            } else if lower.contains("ui") || lower.contains("design") || lower.contains("style") || lower.contains("css") {
+                replyText = "Weaver is crafting at Grand Atelier—cozy Stardew earth tones, pixel art textures, and crisp anti-slop contrast."
+                let editEvent = AgentEvent.fileEdited(agentID: "weaver", path: "Sources/Chippy/Theme/ChippyTheme.swift", kind: .modified)
+                eventLog.append(editEvent)
+                director.handleEvent(editEvent)
+            } else {
+                replyText = "Quest received: '\(prompt)'. The council is coordinating across all districts and monitoring active workspace tasks."
+                let readEvent = AgentEvent.fileRead(agentID: "scout", path: "Workspace Context")
+                eventLog.append(readEvent)
+                director.handleEvent(readEvent)
+            }
+
+            let msgEvent = AgentEvent.agentMessage(agentID: "sovereign", text: replyText)
             eventLog.append(msgEvent)
             director.handleEvent(msgEvent)
         }

@@ -114,7 +114,7 @@ public final class CreatureNode: SKNode {
         thoughtBubbleNode?.removeFromParent()
 
         let bubble = SKNode()
-        let maxLen = 42
+        let maxLen = 64
         let displayText = text.count > maxLen ? String(text.prefix(maxLen)) + "…" : text
 
         let roleTag: String = {
