@@ -1,0 +1,79 @@
+{
+  "exactSkillMappings": {
+    "coordinator-mode": "high_council",
+    "parallel-agents": "high_council",
+    "plan-writing": "high_council",
+    "brainstorming": "high_council",
+    "architecture": "high_council",
+    "context-compression": "high_council",
+    "intelligent-routing": "high_council",
+    "behavioral-modes": "high_council",
+    "batch-operations": "high_council",
+    "memory-system": "high_council",
+
+    "security-hardening": "iron_bastion",
+    "vulnerability-scanner": "iron_bastion",
+    "red-team-tactics": "iron_bastion",
+    "tdd-workflow": "iron_bastion",
+    "testing-patterns": "iron_bastion",
+    "lint-and-validate": "iron_bastion",
+    "code-review-checklist": "iron_bastion",
+    "code-review-graph": "iron_bastion",
+    "verify-changes": "iron_bastion",
+    "webapp-testing": "iron_bastion",
+    "performance-profiling": "iron_bastion",
+
+    "frontend-design": "grand_atelier",
+    "design-spec": "grand_atelier",
+    "nextjs-react-expert": "grand_atelier",
+    "tailwind-patterns": "grand_atelier",
+    "web-design-guidelines": "grand_atelier",
+    "mobile-design": "grand_atelier",
+    "frontend-architecture": "grand_atelier",
+    "game-development": "grand_atelier",
+    "i18n-localization": "grand_atelier",
+    "seo-fundamentals": "grand_atelier",
+    "geo-fundamentals": "grand_atelier",
+
+    "database-design": "engine_core",
+    "api-patterns": "engine_core",
+    "server-management": "engine_core",
+    "deployment-procedures": "engine_core",
+    "bash-linux": "engine_core",
+    "powershell-windows": "engine_core",
+    "nodejs-best-practices": "engine_core",
+    "python-patterns": "engine_core",
+    "rust-pro": "engine_core",
+    "clean-code": "engine_core",
+    "simplify-code": "engine_core",
+    "systematic-debugging": "engine_core",
+
+    "documentation-templates": "scriptorium",
+    "app-builder": "scriptorium",
+    "mcp-builder": "scriptorium",
+    "skillify": "scriptorium"
+  },
+  "keywordRules": [
+    {
+      "district": "high_council",
+      "keywords": ["coordinat", "orchestrat", "planning", "brainstorm", "routing", "context", "memory", "agent"]
+    },
+    {
+      "district": "iron_bastion",
+      "keywords": ["security", "vulnerability", "audit", "test", "tdd", "lint", "review", "verify", "red-team", "profiling"]
+    },
+    {
+      "district": "grand_atelier",
+      "keywords": ["frontend", "ui", "ux", "design", "tailwind", "css", "react", "nextjs", "mobile", "layout"]
+    },
+    {
+      "district": "engine_core",
+      "keywords": ["database", "sql", "postgres", "api", "server", "linux", "bash", "deploy", "backend", "python", "rust", "debug"]
+    },
+    {
+      "district": "scriptorium",
+      "keywords": ["doc", "template", "mcp", "skillify", "builder", "spec"]
+    }
+  ],
+  "fallbackDistrict": "wanderers_market"
+}
