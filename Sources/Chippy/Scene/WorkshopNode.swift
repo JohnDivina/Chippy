@@ -75,29 +75,6 @@ public final class WorkshopNode: SKNode {
         sprite.position = CGPoint(x: 0, y: 0)
         structureContainer.addChild(sprite)
         self.buildingSprite = sprite
-
-        // Stardew-style wooden signboard badge
-        let signboard = createSignboard(text: title.uppercased())
-        signboard.position = CGPoint(x: 0, y: 56)
-        signboard.zPosition = 10
-        structureContainer.addChild(signboard)
-    }
-
-    private func createSignboard(text: String) -> SKNode {
-        let node = SKNode()
-        let bg = SKShapeNode(rectOf: CGSize(width: CGFloat(text.count * 6 + 18), height: 14), cornerRadius: 3)
-        bg.fillColor = NSColor(red: 0.22, green: 0.16, blue: 0.12, alpha: 0.88) // Dark oak wood
-        bg.strokeColor = NSColor(red: 0.55, green: 0.40, blue: 0.25, alpha: 0.95) // Wood grain border
-        bg.lineWidth = 0.8
-        node.addChild(bg)
-
-        let label = SKLabelNode(text: text)
-        label.fontName = NSFont.boldSystemFont(ofSize: 7.5).fontName
-        label.fontSize = 7.5
-        label.fontColor = NSColor(red: 0.95, green: 0.90, blue: 0.80, alpha: 1.0)
-        label.verticalAlignmentMode = .center
-        node.addChild(label)
-        return node
     }
 
     /// Triggers an activation glow/bounce when a skill inside this workshop is used.

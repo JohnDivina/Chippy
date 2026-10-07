@@ -16,12 +16,12 @@ public final class PixelArtAtlas: @unchecked Sendable {
     public final class Canvas {
         public let width: Int
         public let height: Int
-        private var pixels: [UInt32] // 0xRRGGBBAA format
+        private var pixels: [UInt8] // Explicit RGBA bytes
 
         public init(width: Int, height: Int) {
             self.width = width
             self.height = height
-            self.pixels = Array(repeating: 0x00000000, count: width * height)
+            self.pixels = Array(repeating: 0, count: width * height * 4)
         }
 
         @inline(__always)
@@ -29,7 +29,15 @@ public final class PixelArtAtlas: @unchecked Sendable {
             guard x >= 0, x < width, y >= 0, y < height else { return }
             // Flips Y so y=0 is top, natural for sprite drawing
             let flippedY = (height - 1) - y
-            pixels[flippedY * width + x] = color
+            let idx = (flippedY * width + x) * 4
+            let r = UInt8((color >> 24) & 0xFF)
+            let g = UInt8((color >> 16) & 0xFF)
+            let b = UInt8((color >> 8) & 0xFF)
+            let a = UInt8(color & 0xFF)
+            pixels[idx]     = r
+            pixels[idx + 1] = g
+            pixels[idx + 2] = b
+            pixels[idx + 3] = a
         }
 
         @inline(__always)

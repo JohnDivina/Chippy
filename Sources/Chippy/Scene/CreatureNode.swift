@@ -46,14 +46,6 @@ public final class CreatureNode: SKNode {
         sprite.position = CGPoint(x: 0, y: 0)
         bodyContainer.addChild(sprite)
         self.spriteNode = sprite
-
-        // Discrete name tag above head
-        let label = SKLabelNode(text: familiarKind.displayName.uppercased())
-        label.fontName = NSFont.boldSystemFont(ofSize: 6.5).fontName
-        label.fontSize = 6.5
-        label.fontColor = NSColor(white: 0.92, alpha: 0.95)
-        label.position = CGPoint(x: 0, y: 30)
-        bodyContainer.addChild(label)
     }
 
     // MARK: - Animations
