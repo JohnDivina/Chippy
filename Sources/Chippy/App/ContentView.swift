@@ -182,7 +182,7 @@ public struct ContentView: View {
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
-            let msgEvent = AgentEvent.agentMessage(agentID: "sovereign", text: "Quest acknowledged. Summoning colony familiars…")
+            let msgEvent = AgentEvent.agentMessage(agentID: "sovereign", text: "Quest logged in diorama! Note: Live coding is driven directly from your active Antigravity session.")
             eventLog.append(msgEvent)
             director.handleEvent(msgEvent)
         }
