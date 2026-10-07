@@ -18,7 +18,10 @@ Agentic AI tools are extraordinarily powerful, but to non-programmers or newcome
 - **👑 The Sovereign (Lead AI Model):** Oversees strategy and reasoning from the High Citadel. The model identity is auto-detected dynamically from session telemetry.
 - **🐾 The Familiars (Agents & Subagents):** Animated worker creatures (Scouts, Masons, Weavers, Sentinels, Arbiters, Scribes) that move across stone paths, inspect files, and hammer at workshops.
 - **🏛️ The Workshops (Skills):** Automatically ingests the **48 production skills** from your local agent environment and organizes them into themed island districts.
-- **⚓ Project Harbor:** Visualizes created and modified project files as crates and scrolls arriving in real-time.
+- **⚓ Project Harbor:** Visualizes created and modified project files as crates arriving in real-time, inspectable with full code diff previews.
+- **🏛️ Town Hall Decision Podium ("They come to you"):** When models need human guidance (`ask_question`), the Sovereign walks to the podium, rings a call bell, and pops up an interactive decision card for direct in-app responses.
+- **📋 Colony Quest Board:** An interactive 3-column Kanban board (Planned, In Progress, Completed) streaming active goals, subagents, and tool tasks.
+- **🔔 Spatial Audio & Dynamic Atmosphere:** Built-in macOS system chimes and real-time day/night island lighting based on local time.
 
 ---
 
