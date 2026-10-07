@@ -72,7 +72,7 @@ public final class WorkshopNode: SKNode {
 
         // Name tag
         let label = SKLabelNode(text: "THE CITADEL")
-        label.fontName = "SFPro-Bold"
+        label.fontName = NSFont.boldSystemFont(ofSize: 9).fontName
         label.fontSize = 9
         label.fontColor = NSColor(white: 0.85, alpha: 1.0)
         label.position = CGPoint(x: 0, y: 38)
@@ -102,7 +102,7 @@ public final class WorkshopNode: SKNode {
         structureContainer.addChild(emblem)
 
         let label = SKLabelNode(text: "PROJECT HARBOR")
-        label.fontName = "SFPro-Bold"
+        label.fontName = NSFont.boldSystemFont(ofSize: 8).fontName
         label.fontSize = 8
         label.fontColor = NSColor(white: 0.85, alpha: 1.0)
         label.position = CGPoint(x: 0, y: 32)
@@ -142,7 +142,7 @@ public final class WorkshopNode: SKNode {
 
         // Workshop banner
         let banner = SKLabelNode(text: title.uppercased())
-        banner.fontName = "SFPro-Bold"
+        banner.fontName = NSFont.boldSystemFont(ofSize: 7.5).fontName
         banner.fontSize = 7.5
         banner.fontColor = NSColor(white: 0.90, alpha: 1.0)
         banner.position = CGPoint(x: 0, y: 50)

@@ -158,7 +158,7 @@ public final class CreatureNode: SKNode {
         let displayText = text.count > maxLen ? String(text.prefix(maxLen)) + "…" : text
 
         let label = SKLabelNode(text: displayText)
-        label.fontName = "SFPro-Regular"
+        label.fontName = NSFont.systemFont(ofSize: 10).fontName
         label.fontSize = 10
         label.fontColor = NSColor(white: 0.15, alpha: 1.0)
         label.verticalAlignmentMode = .center

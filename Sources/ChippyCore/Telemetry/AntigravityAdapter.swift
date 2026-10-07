@@ -204,26 +204,31 @@ public final class AntigravityAdapter: TranscriptAdapter, Sendable {
         }
         if let end = bestEnd {
             var extracted = String(remainder[..<end]).trimmingCharacters(in: .whitespacesAndNewlines)
-            if extracted.hasSuffix(".") { extracted.removeLast() }
+            if !extracted.isEmpty && extracted.hasSuffix(".") { extracted.removeLast() }
             return extracted.trimmingCharacters(in: .whitespaces)
         }
         return nil
     }
 
     private func stripMetadataTags(from text: String) -> String {
+        // Direct extraction of <USER_REQUEST>...</USER_REQUEST> if present
+        if let start = text.range(of: "<USER_REQUEST>"),
+           let end = text.range(of: "</USER_REQUEST>"),
+           start.upperBound <= end.lowerBound {
+            return String(text[start.upperBound..<end.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        // Regex stripping for safe tag removal without index invalidation
         var clean = text
-        // Remove <ADDITIONAL_METADATA>...</ADDITIONAL_METADATA>
-        if let start = clean.range(of: "<ADDITIONAL_METADATA>"), let end = clean.range(of: "</ADDITIONAL_METADATA>") {
-            clean.removeSubrange(start.lowerBound...end.upperBound)
-        }
-        // Remove <USER_SETTINGS_CHANGE>...</USER_SETTINGS_CHANGE>
-        if let start = clean.range(of: "<USER_SETTINGS_CHANGE>"), let end = clean.range(of: "</USER_SETTINGS_CHANGE>") {
-            clean.removeSubrange(start.lowerBound...end.upperBound)
-        }
-        // Extract <USER_REQUEST>...</USER_REQUEST> if present
-        if let start = clean.range(of: "<USER_REQUEST>"), let end = clean.range(of: "</USER_REQUEST>") {
-            let extracted = clean[start.upperBound..<end.lowerBound]
-            return extracted.trimmingCharacters(in: .whitespacesAndNewlines)
+        let patterns = [
+            #"(?s)<ADDITIONAL_METADATA>.*?</ADDITIONAL_METADATA>"#,
+            #"(?s)<USER_SETTINGS_CHANGE>.*?</USER_SETTINGS_CHANGE>"#
+        ]
+        for pattern in patterns {
+            if let regex = try? NSRegularExpression(pattern: pattern) {
+                let range = NSRange(location: 0, length: (clean as NSString).length)
+                clean = regex.stringByReplacingMatches(in: clean, range: range, withTemplate: "")
+            }
         }
         return clean.trimmingCharacters(in: .whitespacesAndNewlines)
     }
