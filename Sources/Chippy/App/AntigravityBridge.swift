@@ -16,6 +16,8 @@ public struct AntigravityBridge: Sendable {
                 if (count of procList) > 0 then
                     set targetProc to item 1 of procList
                     set frontmost of targetProc to true
+                    delay 0.15
+                    keystroke "l" using {command down}
                     delay 0.12
                     set the clipboard to "\(escaped)"
                     keystroke "v" using {command down}
@@ -28,6 +30,11 @@ public struct AntigravityBridge: Sendable {
             var error: NSDictionary?
             if let appleScript = NSAppleScript(source: scriptSource) {
                 appleScript.executeAndReturnError(&error)
+                if let error = error {
+                    print("⚠️ AntigravityBridge AppleScript error: \(error)")
+                } else {
+                    print("✅ AntigravityBridge: Prompt forwarded to Antigravity successfully.")
+                }
             }
         }
     }
