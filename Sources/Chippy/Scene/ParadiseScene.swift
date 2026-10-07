@@ -183,4 +183,10 @@ public final class ParadiseScene: SKScene {
             resetCamera()
         }
     }
+
+    public override func mouseDragged(with event: NSEvent) {
+        let dx = event.deltaX * cameraNode.xScale
+        let dy = event.deltaY * cameraNode.yScale
+        panCamera(by: CGPoint(x: dx, y: -dy))
+    }
 }

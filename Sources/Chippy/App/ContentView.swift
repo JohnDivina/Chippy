@@ -17,7 +17,6 @@ public struct ContentView: View {
     @State private var loadedSkills: [SkillWorkshop] = []
     @State private var eventLog: [AgentEvent] = []
     @State private var isLiveAntigravityMode: Bool = true
-    @State private var dragAccumulator: CGSize = .zero
 
     public init() {
         let newScene = ParadiseScene(size: CGSize(width: 1024, height: 768))
@@ -28,41 +27,26 @@ public struct ContentView: View {
 
     public var body: some View {
         ZStack {
-            // 2.5D SpriteKit Diorama View
+            // 2.5D SpriteKit Diorama View with native Metal batching
             GeometryReader { geo in
                 SpriteView(
                     scene: scene,
                     preferredFramesPerSecond: 60,
-                    options: [.shouldCullNonVisibleNodes]
+                    options: [.shouldCullNonVisibleNodes, .ignoresSiblingOrder]
                 )
                 .frame(width: geo.size.width, height: geo.size.height)
                 .onAppear {
-                    if geo.size.width > 0 && geo.size.height > 0 {
+                    if geo.size.width > 0 && geo.size.height > 0 && scene.size != geo.size {
                         scene.size = geo.size
                     }
                 }
                 .onChange(of: geo.size) { _, newSize in
-                    if newSize.width > 0 && newSize.height > 0 {
+                    if newSize.width > 0 && newSize.height > 0 && scene.size != newSize {
                         scene.size = newSize
                     }
                 }
             }
             .ignoresSafeArea()
-            .gesture(
-                DragGesture(minimumDistance: 1)
-                    .onChanged { value in
-                        let deltaX = value.translation.width - dragAccumulator.width
-                        let deltaY = value.translation.height - dragAccumulator.height
-                        dragAccumulator = value.translation
-                        scene.panCamera(by: CGPoint(
-                            x: deltaX * scene.cameraNode.xScale,
-                            y: -deltaY * scene.cameraNode.yScale
-                        ))
-                    }
-                    .onEnded { _ in
-                        dragAccumulator = .zero
-                    }
-            )
 
             // Hidden shortcut button for quick camera reset (R)
             Button("") { scene.resetCamera() }

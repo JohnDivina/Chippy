@@ -59,21 +59,19 @@ public actor TelemetryWatcher {
     }
 
     private func pollAppendedBytes(from url: URL) {
-        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+              let currentSize = attrs[.size] as? UInt64 else { return }
 
-        guard let fileHandle = try? FileHandle(forReadingFrom: url) else { return }
-        defer { try? fileHandle.close() }
-
-        // Get current total file size
-        fileHandle.seekToEndOfFile()
-        let currentSize = fileHandle.offsetInFile
-
-        // Reset if truncated
+        // Reset if file was truncated
         if currentSize < fileOffset {
             fileOffset = 0
         }
 
+        // Fast exit: if no new bytes were appended, skip opening FileHandle
         guard currentSize > fileOffset else { return }
+
+        guard let fileHandle = try? FileHandle(forReadingFrom: url) else { return }
+        defer { try? fileHandle.close() }
 
         // Seek to last known offset and read newly appended data
         fileHandle.seek(toFileOffset: fileOffset)
