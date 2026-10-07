@@ -93,14 +93,14 @@ public final class CreatureNode: SKNode {
         }
     }
 
-    public func performWork(taskName: String, duration: TimeInterval = 1.2, completion: (@MainActor @Sendable () -> Void)? = nil) {
-        showThought(text: taskName)
+    public func performWork(taskName: String, duration: TimeInterval = 1.8, completion: (@MainActor @Sendable () -> Void)? = nil) {
+        showThought(text: taskName, duration: duration, isWorking: true)
 
-        let jump = SKAction.moveBy(x: 0, y: 4, duration: 0.18)
+        let jump = SKAction.moveBy(x: 0, y: 5, duration: 0.18)
         jump.timingMode = .easeOut
-        let land = SKAction.moveBy(x: 0, y: -4, duration: 0.18)
+        let land = SKAction.moveBy(x: 0, y: -5, duration: 0.18)
         land.timingMode = .easeIn
-        let workAction = SKAction.repeat(SKAction.sequence([jump, land]), count: Int(duration / 0.36))
+        let workAction = SKAction.repeat(SKAction.sequence([jump, land]), count: max(1, Int(duration / 0.36)))
 
         bodyContainer.run(workAction) { [weak self] in
             self?.startIdleAnimation()
@@ -108,41 +108,95 @@ public final class CreatureNode: SKNode {
         }
     }
 
-    public func showThought(text: String) {
+    /// Displays an individual Stardew Valley-inspired RPG speech/thought box above the character's head
+    /// with role icons, clean typography, drop shadow, pointer tail, and active working indicators.
+    public func showThought(text: String, duration: TimeInterval = 4.0, isWorking: Bool = false) {
         thoughtBubbleNode?.removeFromParent()
 
         let bubble = SKNode()
-        let maxLen = 28
+        let maxLen = 42
         let displayText = text.count > maxLen ? String(text.prefix(maxLen)) + "…" : text
 
-        let label = SKLabelNode(text: displayText)
-        label.fontName = NSFont.monospacedSystemFont(ofSize: 8, weight: .semibold).fontName
-        label.fontSize = 8
-        label.fontColor = NSColor(white: 0.95, alpha: 1.0)
-        label.verticalAlignmentMode = .center
+        let roleTag: String = {
+            switch familiarKind {
+            case .sovereign: return "👑 Sovereign"
+            case .scout: return "🔍 Scout"
+            case .mason: return "⚒ Mason"
+            case .weaver: return "✨ Weaver"
+            case .sentinel: return "🛡 Sentinel"
+            case .scribe: return "📜 Scribe"
+            case .arbiter: return "⚖️ Arbiter"
+            }
+        }()
 
-        let bubbleWidth = CGFloat(max(displayText.count * 6 + 16, 40))
-        let bg = SKShapeNode(rectOf: CGSize(width: bubbleWidth, height: 18), cornerRadius: 5)
-        bg.fillColor = NSColor(red: 0.12, green: 0.14, blue: 0.16, alpha: 0.92)
-        bg.strokeColor = NSColor(white: 0.35, alpha: 0.6)
+        let bubbleWidth = CGFloat(max(displayText.count * 6 + 24, 76))
+        let bubbleHeight: CGFloat = 26
+
+        // 1. Drop shadow behind speech box
+        let shadow = SKShapeNode(rectOf: CGSize(width: bubbleWidth, height: bubbleHeight), cornerRadius: 4)
+        shadow.fillColor = NSColor.black.withAlphaComponent(0.35)
+        shadow.strokeColor = .clear
+        shadow.position = CGPoint(x: 0, y: -1)
+        bubble.addChild(shadow)
+
+        // 2. High-contrast solid dark slate bubble container (Anti-slop compliant)
+        let bg = SKShapeNode(rectOf: CGSize(width: bubbleWidth, height: bubbleHeight), cornerRadius: 4)
+        bg.fillColor = NSColor(red: 0.10, green: 0.12, blue: 0.14, alpha: 0.96)
+        bg.strokeColor = isWorking ? NSColor(red: 0.65, green: 0.50, blue: 0.28, alpha: 0.9) : NSColor(white: 0.30, alpha: 0.8)
         bg.lineWidth = 1.0
-
         bubble.addChild(bg)
-        bubble.addChild(label)
-        bubble.position = CGPoint(x: 0, y: 46)
-        bubble.zPosition = 20
+
+        // 3. Downward triangular pointer tail pointing to character's head
+        let tailPath = CGMutablePath()
+        tailPath.move(to: CGPoint(x: -4, y: -bubbleHeight / 2))
+        tailPath.addLine(to: CGPoint(x: 4, y: -bubbleHeight / 2))
+        tailPath.addLine(to: CGPoint(x: 0, y: -bubbleHeight / 2 - 4))
+        tailPath.closeSubpath()
+
+        let tail = SKShapeNode(path: tailPath)
+        tail.fillColor = NSColor(red: 0.10, green: 0.12, blue: 0.14, alpha: 0.96)
+        tail.strokeColor = .clear
+        bubble.addChild(tail)
+
+        // 4. Role tag on top line
+        let roleLabel = SKLabelNode(text: roleTag)
+        roleLabel.fontName = NSFont.monospacedSystemFont(ofSize: 6.5, weight: .bold).fontName
+        roleLabel.fontSize = 6.5
+        roleLabel.fontColor = isWorking ? NSColor(red: 0.98, green: 0.82, blue: 0.42, alpha: 1.0) : NSColor(white: 0.70, alpha: 1.0)
+        roleLabel.verticalAlignmentMode = .center
+        roleLabel.horizontalAlignmentMode = .center
+        roleLabel.position = CGPoint(x: 0, y: 5)
+        bubble.addChild(roleLabel)
+
+        // 5. Main task/message line
+        let textLabel = SKLabelNode(text: displayText)
+        textLabel.fontName = NSFont.monospacedSystemFont(ofSize: 7.5, weight: .semibold).fontName
+        textLabel.fontSize = 7.5
+        textLabel.fontColor = NSColor(white: 0.96, alpha: 1.0)
+        textLabel.verticalAlignmentMode = .center
+        textLabel.horizontalAlignmentMode = .center
+        textLabel.position = CGPoint(x: 0, y: -5)
+        bubble.addChild(textLabel)
+
+        bubble.position = CGPoint(x: 0, y: 48)
+        bubble.zPosition = 25
         bubble.setScale(0.1)
 
         bodyContainer.addChild(bubble)
         self.thoughtBubbleNode = bubble
 
-        let popIn = SKAction.scale(to: 1.0, duration: 0.2)
-        popIn.timingMode = .easeOut
-        let wait = SKAction.wait(forDuration: 3.0)
+        // Pop in with gentle bounce, hover during task, and fade out
+        let popIn = SKAction.scale(to: 1.05, duration: 0.14)
+        let settle = SKAction.scale(to: 1.0, duration: 0.08)
+        let hoverUp = SKAction.moveBy(x: 0, y: 1.5, duration: 0.8)
+        let hoverDown = SKAction.moveBy(x: 0, y: -1.5, duration: 0.8)
+        let hoverLoop = SKAction.repeat(SKAction.sequence([hoverUp, hoverDown]), count: max(1, Int(duration / 1.6)))
         let fadeOut = SKAction.fadeOut(withDuration: 0.3)
         let remove = SKAction.removeFromParent()
 
-        bubble.run(SKAction.sequence([popIn, wait, fadeOut, remove])) { [weak self] in
+        let sequence = SKAction.sequence([popIn, settle, hoverLoop, fadeOut, remove])
+
+        bubble.run(sequence) { [weak self] in
             if self?.thoughtBubbleNode === bubble {
                 self?.thoughtBubbleNode = nil
             }

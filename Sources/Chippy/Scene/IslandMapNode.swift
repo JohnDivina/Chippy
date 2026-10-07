@@ -236,4 +236,18 @@ public final class IslandMapNode: SKNode {
     public func activateWorkshop(key: String) {
         workshopNodes[key]?.activateWorkshop()
     }
+
+    public func setWorkshopWorking(key: String, isWorking: Bool, task: String? = nil) {
+        workshopNodes[key]?.setActiveWorking(isWorking, taskDescription: task)
+    }
+
+    public func setAllWorkshopsWorking(_ isWorking: Bool) {
+        for node in workshopNodes.values {
+            node.setActiveWorking(isWorking)
+        }
+    }
+
+    public func workshopNode(key: String) -> WorkshopNode? {
+        workshopNodes[key]
+    }
 }

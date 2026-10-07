@@ -99,6 +99,14 @@ public final class ParadiseScene: SKScene {
         }
     }
 
+    public func setWorkshopWorking(key: String, isWorking: Bool, task: String? = nil) {
+        islandMap.setWorkshopWorking(key: key, isWorking: isWorking, task: task)
+    }
+
+    public func setAllWorkshopsWorking(_ isWorking: Bool) {
+        islandMap.setAllWorkshopsWorking(isWorking)
+    }
+
     // MARK: - Camera Controls & Island Bounds Clamping
 
     public let cameraMinX: CGFloat = -260.0
