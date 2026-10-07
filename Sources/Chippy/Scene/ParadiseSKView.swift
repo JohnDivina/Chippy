@@ -1,7 +1,19 @@
 import SwiftUI
 import SpriteKit
 
-/// `NSViewRepresentable` wrapping `SKView` with fine-grained control over occlusion,
+/// Custom `SKView` subclass that ensures Metal render passes only occur when a valid window and drawable layer exist.
+public final class GovernorSKView: SKView {
+    public override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window != nil {
+            isPaused = false
+        } else {
+            isPaused = true
+        }
+    }
+}
+
+/// `NSViewRepresentable` wrapping `GovernorSKView` with fine-grained control over occlusion,
 /// pauses, Metal draw call batching, and energy-efficient frame rates.
 public struct ParadiseSKView: NSViewRepresentable {
     public let scene: SKScene
@@ -12,8 +24,9 @@ public struct ParadiseSKView: NSViewRepresentable {
         self.governor = governor
     }
 
-    public func makeNSView(context: Context) -> SKView {
-        let skView = SKView()
+    public func makeNSView(context: Context) -> GovernorSKView {
+        let skView = GovernorSKView()
+        skView.isPaused = true // Avoid frame 0 draw call before window attaches
         skView.ignoresSiblingOrder = true
         skView.shouldCullNonVisibleNodes = true
         skView.preferredFramesPerSecond = 60
@@ -23,7 +36,7 @@ public struct ParadiseSKView: NSViewRepresentable {
         return skView
     }
 
-    public func updateNSView(_ nsView: SKView, context: Context) {
+    public func updateNSView(_ nsView: GovernorSKView, context: Context) {
         if nsView.scene !== scene {
             nsView.presentScene(scene)
             governor.attach(skView: nsView, scene: scene)
