@@ -26,17 +26,34 @@ public struct ContentView: View {
     public var body: some View {
         ZStack {
             // 2.5D SpriteKit Diorama View
-            SpriteView(scene: scene)
-                .ignoresSafeArea()
-                .gesture(
-                    DragGesture()
-                        .onChanged { value in
-                            scene.panCamera(by: CGPoint(
-                                x: value.translation.width * 0.5,
-                                y: -value.translation.height * 0.5
-                            ))
-                        }
+            GeometryReader { geo in
+                SpriteView(
+                    scene: scene,
+                    preferredFramesPerSecond: 60,
+                    options: [.shouldCullNonVisibleNodes]
                 )
+                .frame(width: geo.size.width, height: geo.size.height)
+                .onAppear {
+                    if geo.size.width > 0 && geo.size.height > 0 {
+                        scene.size = geo.size
+                    }
+                }
+                .onChange(of: geo.size) { _, newSize in
+                    if newSize.width > 0 && newSize.height > 0 {
+                        scene.size = newSize
+                    }
+                }
+            }
+            .ignoresSafeArea()
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        scene.panCamera(by: CGPoint(
+                            x: value.translation.width * 0.5,
+                            y: -value.translation.height * 0.5
+                        ))
+                    }
+            )
 
             // Anti-slop SwiftUI HUD
             ChippyHUDView(
