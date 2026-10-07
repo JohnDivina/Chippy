@@ -10,6 +10,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.async {
             if let window = NSApp.windows.first {
                 window.title = "Chippy — AI Paradise"
+                window.level = .floating // Pinned on top as Floating HUD
+                window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
                 window.makeKeyAndOrderFront(nil)
                 window.center()
             }
