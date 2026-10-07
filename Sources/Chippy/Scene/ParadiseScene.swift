@@ -101,8 +101,18 @@ public final class ParadiseScene: SKScene {
 
     // MARK: - Camera Controls
 
+    public func zoomIn() {
+        let newScale = max(0.4, cameraNode.xScale - 0.2)
+        cameraNode.run(SKAction.scale(to: newScale, duration: 0.2))
+    }
+
+    public func zoomOut() {
+        let newScale = min(3.0, cameraNode.xScale + 0.2)
+        cameraNode.run(SKAction.scale(to: newScale, duration: 0.2))
+    }
+
     public func zoomCamera(by delta: CGFloat) {
-        let newScale = max(0.5, min(2.5, cameraNode.xScale - delta * 0.1))
+        let newScale = max(0.4, min(3.0, cameraNode.xScale - delta * 0.1))
         cameraNode.setScale(newScale)
     }
 
@@ -117,5 +127,18 @@ public final class ParadiseScene: SKScene {
         let move = SKAction.move(to: CGPoint(x: 0, y: 40), duration: 0.3)
         let scale = SKAction.scale(to: 1.0, duration: 0.3)
         cameraNode.run(SKAction.group([move, scale]))
+    }
+
+    public override func scrollWheel(with event: NSEvent) {
+        let delta = event.deltaY
+        if delta != 0 {
+            let newScale = max(0.4, min(3.0, cameraNode.xScale - delta * 0.04))
+            cameraNode.setScale(newScale)
+        }
+    }
+
+    public override func magnify(with event: NSEvent) {
+        let newScale = max(0.4, min(3.0, cameraNode.xScale * (1.0 - event.magnification)))
+        cameraNode.setScale(newScale)
     }
 }

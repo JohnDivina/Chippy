@@ -7,14 +7,16 @@ public struct ContentView: View {
     @State private var scene: ParadiseScene
     @State private var director: SceneDirector
     @State private var replayEngine: ReplayEngine?
+    @State private var telemetryWatcher: TelemetryWatcher?
 
     @State private var activeModelName: String = "Observing Model..."
     @State private var isPlaying: Bool = false
     @State private var currentSpeed: PlaybackSpeed = .normal
     @State private var currentProgress: Int = 0
     @State private var totalEvents: Int = 0
-    @State private var loadedSkillCount: Int = 0
+    @State private var loadedSkills: [SkillWorkshop] = []
     @State private var eventLog: [AgentEvent] = []
+    @State private var isLiveAntigravityMode: Bool = true
 
     public init() {
         let newScene = ParadiseScene(size: CGSize(width: 1024, height: 768))
@@ -61,14 +63,21 @@ public struct ContentView: View {
                 isPlaying: $isPlaying,
                 currentSpeed: $currentSpeed,
                 currentProgress: $currentProgress,
+                isLiveAntigravityMode: $isLiveAntigravityMode,
                 totalEvents: totalEvents,
-                loadedSkillCount: loadedSkillCount,
+                skills: loadedSkills,
                 events: eventLog,
                 onPlayPause: togglePlayPause,
                 onStepForward: stepForward,
                 onStepBackward: stepBackward,
                 onSpeedChange: changeSpeed,
-                onResetCamera: { scene.resetCamera() }
+                onResetCamera: { scene.resetCamera() },
+                onZoomIn: { scene.zoomIn() },
+                onZoomOut: { scene.zoomOut() },
+                onSelectSkill: handleSelectSkill,
+                onSelectModel: handleSelectModel,
+                onSubmitPrompt: handlePromptSubmit,
+                onToggleLiveMode: toggleLiveMode
             )
         }
         .frame(minWidth: 960, minHeight: 640)
@@ -81,21 +90,105 @@ public struct ContentView: View {
 
     @MainActor
     private func initializeChippy() async {
-        // 1. Ingest production skills
+        // 1. Ingest all 48 production skills directly from workspace
+        let productionSkillsURL = URL(fileURLWithPath: "/Users/johnrey/Desktop/Programming/production-agents/.agents/skills")
         let discovery = SkillDiscovery()
-        let discoveredSkills = discovery.discoverSkills(
+        let discovered = discovery.discoverSkills(
+            userCustomFolders: [productionSkillsURL],
             workspaceURL: URL(fileURLWithPath: "/Users/johnrey/Desktop/Programming")
         )
-        self.loadedSkillCount = discoveredSkills.count
+        self.loadedSkills = discovered
 
-        // 2. Initialize ReplayEngine with bundled portfolio session fixture
+        // 2. Setup Live Antigravity Telemetry Watcher
+        let watcher = TelemetryWatcher()
+        self.telemetryWatcher = watcher
+
+        if isLiveAntigravityMode {
+            startLiveWatching(watcher: watcher)
+        } else {
+            setupReplayFixture()
+        }
+    }
+
+    private func startLiveWatching(watcher: TelemetryWatcher) {
+        if let latestURL = SessionLocator().findLatestTranscriptURL() {
+            Task {
+                let stream = await watcher.startWatching(fileURL: latestURL, readFromBeginning: true)
+                for await event in stream {
+                    await MainActor.run {
+                        director.handleEvent(event)
+                        eventLog.append(event)
+                        activeModelName = director.activeModelName
+                    }
+                }
+            }
+        } else {
+            // Fallback to bundled fixture if no local Antigravity session found
+            setupReplayFixture()
+        }
+    }
+
+    private func setupReplayFixture() {
         let adapter = AntigravityAdapter()
         if let fixtureURL = ReplayEngine.defaultRecordingURL(),
            let engine = try? ReplayEngine(transcriptURL: fixtureURL, adapter: adapter) {
             self.replayEngine = engine
-            self.totalEvents = await engine.totalEvents
+            Task {
+                let count = await engine.totalEvents
+                await MainActor.run { self.totalEvents = count }
+            }
         }
     }
+
+    private func toggleLiveMode() {
+        isLiveAntigravityMode.toggle()
+        eventLog.removeAll()
+
+        if isLiveAntigravityMode {
+            if let watcher = telemetryWatcher {
+                startLiveWatching(watcher: watcher)
+            }
+        } else {
+            Task {
+                await telemetryWatcher?.stopWatching()
+            }
+            setupReplayFixture()
+        }
+    }
+
+    private func handlePromptSubmit(_ prompt: String) {
+        let userEvent = AgentEvent.userPrompt(text: prompt)
+        eventLog.append(userEvent)
+        director.handleEvent(userEvent)
+
+        // Trigger Sovereign thinking and familiar delegation animation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            let thinkEvent = AgentEvent.thinking(agentID: "sovereign")
+            eventLog.append(thinkEvent)
+            director.handleEvent(thinkEvent)
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+            let msgEvent = AgentEvent.agentMessage(agentID: "sovereign", text: "Quest acknowledged. Summoning colony familiars…")
+            eventLog.append(msgEvent)
+            director.handleEvent(msgEvent)
+        }
+    }
+
+    private func handleSelectSkill(_ skill: SkillWorkshop) {
+        let event = AgentEvent.skillLoaded(agentID: "scribe", skillName: skill.name)
+        eventLog.append(event)
+        director.handleEvent(event)
+    }
+
+    private func handleSelectModel(_ model: String) {
+        self.activeModelName = model
+        let event = AgentEvent.sessionStarted(sessionID: UUID().uuidString, model: model, startedAt: Date())
+        eventLog.append(event)
+        director.handleEvent(event)
+    }
+
+    // MARK: - Replay Controls
 
     private func togglePlayPause() {
         guard let engine = replayEngine else { return }
