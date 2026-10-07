@@ -64,6 +64,10 @@ public struct Narrator: Sendable {
         case .agentMessage:
             return "The Sovereign presented the Council Dispatch answer."
 
+        case .decisionRequested(_, let question, _):
+            let snippet = question.count > 45 ? String(question.prefix(42)) + "..." : question
+            return "The Sovereign stepped to the podium: \(snippet)"
+
         case .error(_, let msg, let reason):
             if reason == .quotaExceeded {
                 return "Antigravity quota limit encountered: \(msg)"

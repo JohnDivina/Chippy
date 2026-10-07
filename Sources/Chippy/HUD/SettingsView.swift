@@ -69,6 +69,19 @@ public struct SettingsView: View {
                     .toggleStyle(.checkbox)
                     .font(.system(size: 12))
                     .foregroundColor(ChippyTheme.textPrimary)
+
+                Toggle("Play spatial audio chimes (decision bell, quest chimes)", isOn: Binding(
+                    get: { SoundEffects.shared.isEnabled },
+                    set: { SoundEffects.shared.isEnabled = $0 }
+                ))
+                .toggleStyle(.checkbox)
+                .font(.system(size: 12))
+                .foregroundColor(ChippyTheme.textPrimary)
+
+                Toggle("Show plain-English Teaching Mode subtitles banner", isOn: $appState.showTeachingMode)
+                    .toggleStyle(.checkbox)
+                    .font(.system(size: 12))
+                    .foregroundColor(ChippyTheme.textPrimary)
             }
             .padding(12)
             .background(ChippyTheme.surfaceBubble)

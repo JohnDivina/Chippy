@@ -43,6 +43,7 @@ public enum AgentEvent: Sendable, Equatable {
     case subagentSpawned(parentID: String, childID: String, task: String)
     case subagentFinished(childID: String)
     case agentMessage(agentID: String, text: String)
+    case decisionRequested(agentID: String, question: String, options: [String])
     case error(agentID: String, message: String, reason: ErrorReason)
     case sessionEnded(sessionID: String)
 

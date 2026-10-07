@@ -19,6 +19,17 @@ public enum DistrictID: String, Sendable, Equatable, Hashable, CaseIterable, Cod
         case .wanderersMarket: return "Wanderer's Market"
         }
     }
+
+    public var assignedFamiliar: FamiliarKind {
+        switch self {
+        case .highCouncil: return .sovereign
+        case .ironBastion: return .sentinel
+        case .grandAtelier: return .weaver
+        case .engineCore: return .mason
+        case .scriptorium: return .scribe
+        case .wanderersMarket: return .scout
+        }
+    }
 }
 
 /// Represents an island district where specialized workshops cluster.

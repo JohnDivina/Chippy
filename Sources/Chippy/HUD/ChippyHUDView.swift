@@ -20,6 +20,7 @@ public struct ChippyHUDView: View {
     public var onToggleLiveMode: () -> Void
     public var onSelectSession: (SessionInfo) -> Void
     public var onRescanSkills: () -> Void
+    public var onFocusLandmark: ((String) -> Void)?
 
     @State private var showActivityLog: Bool = true
     @State private var showSkillCodex: Bool = false
@@ -43,7 +44,8 @@ public struct ChippyHUDView: View {
         onSubmitPrompt: @escaping (String) -> Void,
         onToggleLiveMode: @escaping () -> Void,
         onSelectSession: @escaping (SessionInfo) -> Void,
-        onRescanSkills: @escaping () -> Void
+        onRescanSkills: @escaping () -> Void,
+        onFocusLandmark: ((String) -> Void)? = nil
     ) {
         self.appState = appState
         self.onPlayPause = onPlayPause
@@ -59,6 +61,7 @@ public struct ChippyHUDView: View {
         self.onToggleLiveMode = onToggleLiveMode
         self.onSelectSession = onSelectSession
         self.onRescanSkills = onRescanSkills
+        self.onFocusLandmark = onFocusLandmark
     }
 
     public var body: some View {
@@ -149,6 +152,91 @@ public struct ChippyHUDView: View {
                 )
                 .transition(.scale(scale: 0.95).combined(with: .opacity))
                 .zIndex(55)
+            }
+
+            // DECISION PODIUM MODAL (AgentCraft inspired)
+            if let decision = appState.pendingDecision {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.easeOut(duration: 0.15)) { appState.pendingDecision = nil }
+                    }
+
+                DecisionPodiumView(
+                    decision: decision,
+                    onSubmit: { answer in
+                        withAnimation(.easeOut(duration: 0.15)) { appState.pendingDecision = nil }
+                        onSubmitPrompt(answer)
+                    },
+                    onDismiss: {
+                        withAnimation(.easeOut(duration: 0.15)) { appState.pendingDecision = nil }
+                    }
+                )
+                .transition(.scale(scale: 0.95).combined(with: .opacity))
+                .zIndex(70)
+            }
+
+            // COLONY QUEST BOARD MODAL
+            if appState.showQuestBoard {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.easeOut(duration: 0.15)) { appState.showQuestBoard = false }
+                    }
+
+                QuestBoardView(
+                    tasks: appState.colonyTasks,
+                    onClose: {
+                        withAnimation(.easeOut(duration: 0.15)) { appState.showQuestBoard = false }
+                    }
+                )
+                .transition(.scale(scale: 0.95).combined(with: .opacity))
+                .zIndex(65)
+            }
+
+            // HARBOR CRATE DIFF INSPECTOR MODAL
+            if let target = appState.inspectingDiff {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.easeOut(duration: 0.15)) { appState.inspectingDiff = nil }
+                    }
+
+                DiffInspectorView(
+                    filePath: target.path,
+                    editCount: target.count,
+                    onClose: {
+                        withAnimation(.easeOut(duration: 0.15)) { appState.inspectingDiff = nil }
+                    }
+                )
+                .transition(.scale(scale: 0.95).combined(with: .opacity))
+                .zIndex(68)
+            }
+
+            // FLOATING ENTITY INSPECTOR CARD
+            if let entity = appState.inspectedEntity {
+                VStack {
+                    HStack {
+                        Spacer()
+                        InspectorView(
+                            entity: entity,
+                            onInspectDiff: { path, count in
+                                appState.inspectingDiff = DiffTarget(path: path, count: count)
+                            },
+                            onFocusLandmark: { key in
+                                onFocusLandmark?(key)
+                            },
+                            onClose: {
+                                appState.inspectedEntity = nil
+                            }
+                        )
+                        .padding(.trailing, 16)
+                        .padding(.top, 60)
+                    }
+                    Spacer()
+                }
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+                .zIndex(45)
             }
         }
         .onChange(of: appState.latestResponse) { _, newResponse in
@@ -398,6 +486,29 @@ public struct ChippyHUDView: View {
 
     private var bottomControlsView: some View {
         HStack(spacing: 8) {
+            // Colony Quest Board Button (AgentCraft inspired)
+            Button(action: { withAnimation { appState.showQuestBoard = true } }) {
+                HStack(spacing: 5) {
+                    Text("📋")
+                        .font(.system(size: 11))
+                    Text("Quests")
+                        .font(.system(size: 11, weight: .medium))
+                    if !appState.colonyTasks.filter({ $0.state == .inProgress }).isEmpty {
+                        Circle()
+                            .fill(ChippyTheme.statusDot)
+                            .frame(width: 5, height: 5)
+                    }
+                }
+                .foregroundColor(ChippyTheme.textPrimary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(ChippyTheme.surfaceBubble)
+                .cornerRadius(8)
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(ChippyTheme.borderSubtle, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .help("Colony Quest Board (Kanban Wall)")
+
             // Chronicle Report Button (Sprint E2)
             Button(action: { withAnimation { appState.showChronicle = true } }) {
                 HStack(spacing: 5) {

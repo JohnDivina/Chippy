@@ -13,6 +13,7 @@ public final class WorkshopNode: SKNode {
     public enum LandmarkKind: Sendable, Equatable {
         case citadel
         case harbor
+        case podium
         case district(DistrictID)
     }
 
@@ -53,6 +54,8 @@ public final class WorkshopNode: SKNode {
                 return PixelArtAtlas.shared.citadelCottage()
             case .harbor:
                 return PixelArtAtlas.shared.woodenFence()
+            case .podium:
+                return PixelArtAtlas.shared.decisionPodium()
             case .district(let id):
                 switch id {
                 case .highCouncil:
@@ -130,7 +133,7 @@ public final class WorkshopNode: SKNode {
         self.signLabel = label
 
         // Mount signboard near the facade roofline
-        board.position = CGPoint(x: 0, y: 46)
+        board.position = CGPoint(x: 0, y: landmarkKind == .podium ? 28 : 46)
         board.zPosition = 8
         structureContainer.addChild(board)
         self.signBoardNode = board

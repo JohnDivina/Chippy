@@ -10,11 +10,14 @@ public final class IslandMapNode: SKNode {
     public let grid: IsometricGrid
     private var workshopNodes: [String: WorkshopNode] = [:]
     private var critters: [CritterNode] = []
+    private var crateContainer = SKNode()
+    private var crateNodes: [String: SKSpriteNode] = [:]
 
     public init(grid: IsometricGrid = IsometricGrid(tileWidth: 64.0, tileHeight: 32.0)) {
         self.grid = grid
         super.init()
 
+        addChild(crateContainer)
         buildTerrain()
         placeSceneryDecorations()
         placeLandmarks()
@@ -192,6 +195,14 @@ public final class IslandMapNode: SKNode {
             key: DistrictID.wanderersMarket.rawValue,
             gridPt: GridPoint(col: -4, row: 1)
         )
+
+        // Decision Podium at Citadel Plaza
+        addWorkshop(
+            kind: .podium,
+            title: "Podium",
+            key: "podium",
+            gridPt: GridPoint(col: 0, row: 1)
+        )
     }
 
     private func placePetsAndWildlife() {
@@ -249,5 +260,72 @@ public final class IslandMapNode: SKNode {
 
     public func workshopNode(key: String) -> WorkshopNode? {
         workshopNodes[key]
+    }
+
+    /// Adds or updates physical shipping crates on the Harbor pier representing edited project files.
+    public func updateHarborCrates(files: [String: Int]) {
+        let baseCol = -3
+        let baseRow = -4
+
+        var fileList = Array(files.keys.sorted())
+        if fileList.count > 12 {
+            fileList = Array(fileList.prefix(12))
+        }
+
+        // Remove old crates no longer present
+        for (path, node) in crateNodes where !fileList.contains(path) {
+            node.removeFromParent()
+            crateNodes.removeValue(forKey: path)
+        }
+
+        // Layout crates on the harbor dock
+        for (index, path) in fileList.enumerated() {
+            let offsetCol = index % 3
+            let offsetRow = index / 3
+            let col = baseCol + offsetCol
+            let row = baseRow - offsetRow
+            let screenPt = grid.gridToScreen(col: col, row: row)
+
+            if let existing = crateNodes[path] {
+                existing.position = CGPoint(x: screenPt.x, y: screenPt.y)
+                existing.zPosition = grid.zPosition(col: col, row: row, layerOffset: 12)
+            } else {
+                let sprite = SKSpriteNode(texture: PixelArtAtlas.shared.shippingCrate())
+                sprite.name = "crate:\(path)"
+                sprite.anchorPoint = CGPoint(x: 0.5, y: 0.2)
+                sprite.position = CGPoint(x: screenPt.x, y: screenPt.y)
+                sprite.zPosition = grid.zPosition(col: col, row: row, layerOffset: 12)
+                crateContainer.addChild(sprite)
+                crateNodes[path] = sprite
+
+                sprite.setScale(0.2)
+                let pop = SKAction.scale(to: 1.0, duration: 0.22)
+                pop.timingMode = .easeOut
+                sprite.run(pop)
+            }
+        }
+    }
+
+    /// Extracts the file path from a touched crate node.
+    public func cratePath(at node: SKNode) -> String? {
+        if let name = node.name, name.hasPrefix("crate:") {
+            return String(name.dropFirst(6))
+        }
+        if let parent = node.parent, let name = parent.name, name.hasPrefix("crate:") {
+            return String(name.dropFirst(6))
+        }
+        return nil
+    }
+
+    /// Identifies the workshop node if the tapped node is part of one.
+    public func workshopAt(node: SKNode) -> WorkshopNode? {
+        var current: SKNode? = node
+        while let curr = current {
+            if let ws = curr as? WorkshopNode {
+                return ws
+            }
+            current = curr.parent
+        }
+        return nil
     }
 }

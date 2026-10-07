@@ -61,6 +61,16 @@ private enum AnyCodableValue: Decodable {
         default: return nil
         }
     }
+
+    var arrayValue: [AnyCodableValue]? {
+        if case .array(let a) = self { return a }
+        return nil
+    }
+
+    var dictionaryValue: [String: AnyCodableValue]? {
+        if case .dictionary(let d) = self { return d }
+        return nil
+    }
 }
 
 /// Adapter transforming Antigravity's `transcript.jsonl` steps into normalized `AgentEvent` streams.
@@ -191,7 +201,29 @@ public final class AntigravityAdapter: TranscriptAdapter, Sendable {
             return [.subagentSpawned(parentID: agentID, childID: childID, task: task)]
 
         case "ask_question":
-            return [.toolCall(agentID: agentID, tool: .ask, summary: "Clarification requested from user")]
+            var resolvedQuestion = args["question"]?.stringValue
+            var parsedOptions: [String] = []
+
+            if let questionsArr = args["questions"]?.arrayValue, let firstQ = questionsArr.first?.dictionaryValue {
+                if let qText = firstQ["question"]?.stringValue, !qText.isEmpty {
+                    resolvedQuestion = qText
+                }
+                if let opts = firstQ["options"]?.arrayValue {
+                    parsedOptions = opts.compactMap { $0.stringValue }
+                }
+            } else if let opts = args["options"]?.arrayValue {
+                parsedOptions = opts.compactMap { $0.stringValue }
+            }
+
+            let finalQuestion = resolvedQuestion
+                ?? args["toolSummary"]?.stringValue
+                ?? args["toolAction"]?.stringValue
+                ?? "Decision requested by the Sovereign"
+
+            return [
+                .decisionRequested(agentID: agentID, question: finalQuestion, options: parsedOptions),
+                .toolCall(agentID: agentID, tool: .ask, summary: finalQuestion)
+            ]
 
         default:
             let summary = args["toolSummary"]?.stringValue ?? args["toolAction"]?.stringValue ?? name

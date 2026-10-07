@@ -9,6 +9,8 @@ public final class ParadiseScene: SKScene {
     public private(set) var cameraNode: SKCameraNode!
 
     private var creatures: [FamiliarKind: CreatureNode] = [:]
+    private var ambientOverlay: SKSpriteNode!
+    public var onSelectEntity: ((InspectedEntity) -> Void)?
 
     public override init(size: CGSize) {
         super.init(size: size)
@@ -17,6 +19,7 @@ public final class ParadiseScene: SKScene {
 
         setupCamera()
         setupIsland()
+        setupAtmosphere()
         setupInitialFamiliars()
     }
 
@@ -37,6 +40,51 @@ public final class ParadiseScene: SKScene {
         let map = IslandMapNode(grid: grid)
         self.islandMap = map
         addChild(map)
+    }
+
+    private func setupAtmosphere() {
+        let overlay = SKSpriteNode(color: .clear, size: CGSize(width: 3000, height: 3000))
+        overlay.position = .zero
+        overlay.zPosition = 80
+        addChild(overlay)
+        self.ambientOverlay = overlay
+        updateAtmosphere()
+    }
+
+    /// Adapts the island's lighting to the real local time of day or error status.
+    public func updateAtmosphere(isErrorState: Bool = false) {
+        let hour = Calendar.current.component(.hour, from: Date())
+        let color: NSColor
+        let alpha: CGFloat
+
+        if isErrorState {
+            color = NSColor(red: 0.28, green: 0.14, blue: 0.18, alpha: 1.0)
+            alpha = 0.18
+        } else if hour >= 6 && hour < 9 {
+            // Dawn: warm amber/gold tint
+            color = NSColor(red: 0.95, green: 0.70, blue: 0.35, alpha: 1.0)
+            alpha = 0.08
+        } else if hour >= 9 && hour < 17 {
+            // High daylight
+            color = .clear
+            alpha = 0.0
+        } else if hour >= 17 && hour < 20 {
+            // Sunset / Dusk
+            color = NSColor(red: 0.85, green: 0.45, blue: 0.25, alpha: 1.0)
+            alpha = 0.12
+        } else {
+            // Night: deep indigo twilight
+            color = NSColor(red: 0.10, green: 0.15, blue: 0.35, alpha: 1.0)
+            alpha = 0.25
+        }
+
+        ambientOverlay?.run(SKAction.colorize(with: color, colorBlendFactor: 1.0, duration: 1.0))
+        ambientOverlay?.run(SKAction.fadeAlpha(to: alpha, duration: 1.0))
+    }
+
+    /// Updates physical shipping crates on the Harbor pier representing edited files.
+    public func updateHarborCrates(files: [String: Int]) {
+        islandMap.updateHarborCrates(files: files)
     }
 
     private func setupInitialFamiliars() {
@@ -181,6 +229,61 @@ public final class ParadiseScene: SKScene {
     public override func mouseDown(with event: NSEvent) {
         if event.clickCount == 2 {
             resetCamera()
+            return
+        }
+
+        let location = event.location(in: self)
+        let tappedNodes = nodes(at: location)
+
+        // 1. Check if a creature was clicked
+        for (kind, creature) in creatures {
+            if creature.contains(location) || tappedNodes.contains(where: { $0 === creature || $0.inParentHierarchy(creature) }) {
+                onSelectEntity?(.familiar(kind: kind, currentTask: creature.currentTask, recentActions: []))
+                return
+            }
+        }
+
+        // 2. Check if a Harbor crate was clicked
+        for node in tappedNodes {
+            if let path = islandMap.cratePath(at: node) {
+                onSelectEntity?(.crate(path: path, editCount: 1))
+                return
+            }
+        }
+
+        // 3. Check if a Workshop/Landmark was clicked
+        for node in tappedNodes {
+            if let ws = islandMap.workshopAt(node: node) {
+                if let districtID = ws.districtID {
+                    let syntheticSkill = SkillWorkshop(
+                        id: ws.title.lowercased(),
+                        name: ws.title,
+                        description: "District workshop active on the island.",
+                        districtID: districtID,
+                        directoryURL: URL(fileURLWithPath: "/")
+                    )
+                    onSelectEntity?(.workshop(skill: syntheticSkill))
+                } else if ws.landmarkKind == .citadel {
+                    let citadelSkill = SkillWorkshop(
+                        id: "citadel",
+                        name: "Citadel Manor",
+                        description: "High Council seat overseeing agent orchestration and user quests.",
+                        districtID: .highCouncil,
+                        directoryURL: URL(fileURLWithPath: "/")
+                    )
+                    onSelectEntity?(.workshop(skill: citadelSkill))
+                } else if ws.landmarkKind == .podium {
+                    let podiumSkill = SkillWorkshop(
+                        id: "podium",
+                        name: "Decision Podium",
+                        description: "The rostrum where the Sovereign presents critical questions and decisions to the user.",
+                        districtID: .highCouncil,
+                        directoryURL: URL(fileURLWithPath: "/")
+                    )
+                    onSelectEntity?(.workshop(skill: podiumSkill))
+                }
+                return
+            }
         }
     }
 

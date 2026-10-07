@@ -950,4 +950,92 @@ public final class PixelArtAtlas: @unchecked Sendable {
         cache.setObject(tex, forKey: key)
         return tex
     }
+
+    /// Renders the Town Hall Decision Podium (wooden lectern with golden bell and parchment).
+    public func decisionPodium() -> SKTexture {
+        let key = "decisionPodium" as NSString
+        if let cached = cache.object(forKey: key) { return cached }
+
+        let c = Canvas(width: 32, height: 36)
+        let cDarkWood: UInt32 = 0x3E2723FF
+        let cWood: UInt32     = 0x5D4037FF
+        let cLightWood: UInt32 = 0x8D6E63FF
+        let cParchment: UInt32 = 0xEDE0C8FF
+        let cGold: UInt32     = 0xD4AF37FF
+        let cGoldLight: UInt32 = 0xF5D77FFF
+
+        // Stone / Cobblestone foundation base
+        c.fillRect(x: 6, y: 30, w: 20, h: 4, color: 0x424242FF)
+        c.fillRect(x: 8, y: 28, w: 16, h: 2, color: 0x616161FF)
+
+        // Carved wooden central column
+        c.fillRect(x: 12, y: 14, w: 8, h: 14, color: cWood)
+        c.fillRect(x: 12, y: 14, w: 2, h: 14, color: cDarkWood)
+        c.fillRect(x: 18, y: 14, w: 2, h: 14, color: cLightWood)
+
+        // Lectern table top slanted
+        c.fillRect(x: 6, y: 8, w: 20, h: 6, color: cWood)
+        c.fillRect(x: 4, y: 6, w: 24, h: 3, color: cDarkWood)
+        c.fillRect(x: 5, y: 5, w: 22, h: 2, color: cLightWood)
+
+        // Open decision parchment document
+        c.fillRect(x: 8, y: 6, w: 16, h: 4, color: cParchment)
+        c.fillRect(x: 10, y: 7, w: 12, h: 1, color: 0x5D4037FF) // Text ink line
+        c.fillRect(x: 10, y: 9, w: 8, h: 1, color: 0x5D4037FF)
+
+        // Ornate Council Brass Bell on post
+        c.fillRect(x: 23, y: 1, w: 2, h: 6, color: 0x424242FF) // Bell post
+        c.fillRect(x: 21, y: 2, w: 6, h: 3, color: cGold)      // Bell dome
+        c.fillRect(x: 22, y: 1, w: 4, h: 1, color: cGoldLight) // Bell glint
+        c.setPixel(24, y: 5, cGoldLight)                       // Bell clapper
+
+        let tex = c.makeTexture()
+        cache.setObject(tex, forKey: key)
+        return tex
+    }
+
+    /// Renders a shipping cargo crate (wooden planks with dark iron banding).
+    public func shippingCrate() -> SKTexture {
+        let key = "shippingCrate" as NSString
+        if let cached = cache.object(forKey: key) { return cached }
+
+        let c = Canvas(width: 24, height: 22)
+        let cPlankDark: UInt32 = 0x4E342EFF
+        let cPlankMid: UInt32  = 0x795548FF
+        let cPlankLight: UInt32 = 0xA1887FFF
+        let cIron: UInt32      = 0x263238FF
+        let cIronRivet: UInt32 = 0x90A4AEFF
+
+        // Crate body base fill
+        c.fillRect(x: 2, y: 2, w: 20, h: 18, color: cPlankMid)
+
+        // Horizontal plank seams
+        c.fillRect(x: 2, y: 7, w: 20, h: 1, color: cPlankDark)
+        c.fillRect(x: 2, y: 13, w: 20, h: 1, color: cPlankDark)
+        c.fillRect(x: 2, y: 2, w: 20, h: 1, color: cPlankLight)
+
+        // Diagonal wooden bracing
+        for i in 0..<16 {
+            c.setPixel(4 + i, y: 4 + (i * 14 / 16), cPlankDark)
+        }
+
+        // Corner iron brackets
+        c.fillRect(x: 1, y: 1, w: 4, h: 4, color: cIron)
+        c.fillRect(x: 19, y: 1, w: 4, h: 4, color: cIron)
+        c.fillRect(x: 1, y: 17, w: 4, h: 4, color: cIron)
+        c.fillRect(x: 19, y: 17, w: 4, h: 4, color: cIron)
+
+        // Rivets
+        c.setPixel(2, y: 2, cIronRivet)
+        c.setPixel(20, y: 2, cIronRivet)
+        c.setPixel(2, y: 18, cIronRivet)
+        c.setPixel(20, y: 18, cIronRivet)
+
+        // Outer crisp outline
+        c.fillRect(x: 1, y: 20, w: 22, h: 1, color: 0x1A1A1AFF) // Drop shadow
+
+        let tex = c.makeTexture()
+        cache.setObject(tex, forKey: key)
+        return tex
+    }
 }

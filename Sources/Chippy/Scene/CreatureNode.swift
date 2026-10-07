@@ -7,6 +7,7 @@ import ChippyCore
 public final class CreatureNode: SKNode {
     public let familiarKind: FamiliarKind
     public var gridPosition: GridPoint
+    public private(set) var currentTask: String? = nil
 
     private let bodyContainer = SKNode()
     private let shadowNode: SKShapeNode
@@ -111,6 +112,7 @@ public final class CreatureNode: SKNode {
     /// Displays an individual Stardew Valley-inspired RPG speech/thought box above the character's head
     /// with role icons, clean typography, drop shadow, pointer tail, and active working indicators.
     public func showThought(text: String, duration: TimeInterval = 4.0, isWorking: Bool = false) {
+        self.currentTask = text
         thoughtBubbleNode?.removeFromParent()
 
         let bubble = SKNode()

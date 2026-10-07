@@ -11,10 +11,19 @@ public enum InspectedEntity: Equatable {
 
 public struct InspectorView: View {
     public let entity: InspectedEntity
+    public var onInspectDiff: ((String, Int) -> Void)?
+    public var onFocusLandmark: ((String) -> Void)?
     public var onClose: () -> Void
 
-    public init(entity: InspectedEntity, onClose: @escaping () -> Void) {
+    public init(
+        entity: InspectedEntity,
+        onInspectDiff: ((String, Int) -> Void)? = nil,
+        onFocusLandmark: ((String) -> Void)? = nil,
+        onClose: @escaping () -> Void
+    ) {
         self.entity = entity
+        self.onInspectDiff = onInspectDiff
+        self.onFocusLandmark = onFocusLandmark
         self.onClose = onClose
     }
 
@@ -81,10 +90,21 @@ public struct InspectorView: View {
                             }
                         }
                     }
+
+                    Button("Focus Camera") {
+                        onFocusLandmark?(kind.district.rawValue)
+                    }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 11))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(ChippyTheme.surfaceBubble)
+                    .cornerRadius(6)
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(ChippyTheme.borderSubtle, lineWidth: 1))
                 }
 
             case .workshop(let skill):
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 10) {
                     Text(skill.name)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(ChippyTheme.textPrimary)
@@ -95,19 +115,22 @@ public struct InspectorView: View {
                         .fixedSize(horizontal: false, vertical: true)
 
                     HStack {
-                        Text("District: \(skill.districtID.displayName)")
+                        Text("Stationed Familiar: \(skill.districtID.assignedFamiliar.displayName)")
                             .font(.system(size: 10))
                             .foregroundColor(ChippyTheme.textMuted)
                         Spacer()
-                        if skill.explicitDistrict != nil {
-                            Text("Custom")
-                                .font(.system(size: 9, weight: .semibold))
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(ChippyTheme.surfaceBubble)
-                                .cornerRadius(4)
-                        }
                     }
+
+                    Button("Focus Camera on District") {
+                        onFocusLandmark?(skill.districtID.rawValue)
+                    }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 11))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(ChippyTheme.surfaceBubble)
+                    .cornerRadius(6)
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(ChippyTheme.borderSubtle, lineWidth: 1))
                 }
 
             case .crate(let path, let editCount):
@@ -126,6 +149,17 @@ public struct InspectorView: View {
                         .foregroundColor(ChippyTheme.textMuted)
 
                     HStack(spacing: 8) {
+                        Button("Inspect Diff") {
+                            onInspectDiff?(path, editCount)
+                        }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 11, weight: .semibold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(ChippyTheme.accentSolid)
+                        .foregroundColor(ChippyTheme.surfacePrimary)
+                        .cornerRadius(6)
+
                         Button("Reveal in Finder") {
                             let url = URL(fileURLWithPath: path)
                             NSWorkspace.shared.activateFileViewerSelecting([url])

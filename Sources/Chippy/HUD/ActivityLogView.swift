@@ -105,6 +105,9 @@ public struct ActivityLogView: View {
             return "Subagent Finished"
         case .agentMessage:
             return "Model Response"
+        case .decisionRequested(_, let question, _):
+            let shortQ = question.count > 30 ? String(question.prefix(28)) + "…" : question
+            return "Decision Needed: \(shortQ)"
         case .error(_, let msg, let reason):
             if reason == .quotaExceeded {
                 return "Quota Exceeded: \(msg)"
@@ -121,6 +124,8 @@ public struct ActivityLogView: View {
         switch event {
         case .userPrompt(let text):
             return text
+        case .decisionRequested(_, let question, let options):
+            return options.isEmpty ? question : "\(question) [\(options.joined(separator: ", "))]"
         case .fileRead(_, let path):
             return path
         case .fileEdited(_, let path, _):

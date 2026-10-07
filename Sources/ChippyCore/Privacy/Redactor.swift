@@ -91,6 +91,8 @@ public struct Redactor: Sendable {
             return event
         case .agentMessage(let agentID, let text):
             return .agentMessage(agentID: agentID, text: redact(text))
+        case .decisionRequested(let agentID, let question, let options):
+            return .decisionRequested(agentID: agentID, question: redact(question), options: options.map { redact($0) })
         case .error(let agentID, let message, let reason):
             return .error(agentID: agentID, message: redact(message), reason: reason)
         case .sessionEnded:

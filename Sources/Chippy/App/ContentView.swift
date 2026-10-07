@@ -22,6 +22,10 @@ public struct ContentView: View {
         let newGovernor = RenderGovernor()
         let newMonitor = SessionMonitor()
 
+        newScene.onSelectEntity = { [weak appState] entity in
+            appState?.inspectedEntity = entity
+        }
+
         _scene = State(initialValue: newScene)
         _director = State(initialValue: newDirector)
         _governor = State(initialValue: newGovernor)
@@ -68,7 +72,8 @@ public struct ContentView: View {
                 onSubmitPrompt: handlePromptSubmit,
                 onToggleLiveMode: toggleLiveMode,
                 onSelectSession: handleSelectSession,
-                onRescanSkills: rescanSkills
+                onRescanSkills: rescanSkills,
+                onFocusLandmark: { landmarkKey in scene.focusLandmark(key: landmarkKey) }
             )
         }
         .frame(minWidth: 960, minHeight: 640)
@@ -158,6 +163,22 @@ public struct ContentView: View {
 
                     if case .agentMessage(_, let text) = event {
                         appState.latestResponse = text
+                    }
+
+                    if case .fileEdited = event {
+                        var crateMap: [String: Int] = [:]
+                        for e in appState.eventLog {
+                            if case .fileEdited(_, let p, _) = e {
+                                crateMap[p, default: 0] += 1
+                            }
+                        }
+                        scene.updateHarborCrates(files: crateMap)
+                    }
+
+                    if case .error = event {
+                        scene.updateAtmosphere(isErrorState: true)
+                    } else {
+                        scene.updateAtmosphere(isErrorState: false)
                     }
 
                     NotificationService.shared.handleEvent(event, isAppActive: NSApp.isActive)

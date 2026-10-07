@@ -156,6 +156,18 @@ public final class SceneDirector {
                 scene.familiarNode(for: .sovereign)?.showThought(text: "⚠️ \(shortMsg)", duration: 5.0)
             }
 
+        case .decisionRequested(_, let question, _):
+            queue.recordWorkshopActivity(landmarkKey: "citadel", taskName: "Decision Needed")
+            let snippet = question.count > 42 ? String(question.prefix(40)) + "…" : question
+            scene.familiarNode(for: .sovereign)?.showThought(text: "❓ \(snippet)", duration: 7.0, isWorking: true)
+            queue.enqueue(ChoreographyAction(
+                familiar: .sovereign,
+                taskName: "Podium: \(snippet)",
+                targetLandmark: "citadel",
+                targetGrid: GridPoint(col: 0, row: 1),
+                duration: 1.8
+            ))
+
         case .commandFinished, .subagentFinished, .sessionEnded:
             break
         }
