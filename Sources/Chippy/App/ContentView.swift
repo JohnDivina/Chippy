@@ -73,7 +73,9 @@ public struct ContentView: View {
         }
         .frame(minWidth: 960, minHeight: 640)
         .task {
-            NotificationService.shared.requestAuthorizationIfNeeded()
+            if Bundle.main.bundleURL.pathExtension == "app" {
+                NotificationService.shared.requestAuthorizationIfNeeded()
+            }
             await initializeChippy()
         }
         .onChange(of: appState.isPinnedOnTop) { _, isPinned in

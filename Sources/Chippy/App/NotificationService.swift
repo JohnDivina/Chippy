@@ -4,18 +4,28 @@ import AppKit
 import ChippyCore
 
 /// Posts local macOS notifications when the agent requires attention, finishes a quest, or hits an error.
+/// Automatically detects if running as a bundled .app (UNUserNotificationCenter) or raw binary via swift run.
 @MainActor
 public final class NotificationService {
     public static let shared = NotificationService()
 
     private var hasRequestedPermission = false
 
+    private var isNotificationCenterAvailable: Bool {
+        Bundle.main.bundleURL.pathExtension == "app" || Bundle.main.bundlePath.contains(".app/")
+    }
+
     private init() {}
 
-    /// Requests notification authorization from macOS.
+    /// Requests notification authorization from macOS when running in an app bundle.
     public func requestAuthorizationIfNeeded() {
         guard !hasRequestedPermission else { return }
         hasRequestedPermission = true
+
+        guard isNotificationCenterAvailable else {
+            // Running as raw terminal executable via `swift run`, UNUserNotificationCenter is not supported by macOS
+            return
+        }
 
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if let error = error {
@@ -68,21 +78,26 @@ public final class NotificationService {
     }
 
     private func postNotification(title: String, body: String, category: String) {
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        content.sound = .default
+        if isNotificationCenterAvailable {
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+            content.sound = .default
 
-        let request = UNNotificationRequest(
-            identifier: UUID().uuidString,
-            content: content,
-            trigger: nil // deliver immediately
-        )
+            let request = UNNotificationRequest(
+                identifier: UUID().uuidString,
+                content: content,
+                trigger: nil // deliver immediately
+            )
 
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Failed to schedule notification: \(error.localizedDescription)")
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("Failed to schedule notification: \(error.localizedDescription)")
+                }
             }
+        } else {
+            // Safe fallback when running as raw binary via swift run
+            NSApp.requestUserAttention(.informationalRequest)
         }
     }
 }
